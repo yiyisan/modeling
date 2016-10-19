@@ -1,0 +1,6 @@
+global-exclude *.pyc *.bak
+recursive-include work/marvin *.py
+prune work/marvin/.ipynb_checkpoints
+prune work/marvin/*/.ipynb_checkpoints
+prune work/marvin/.git
+prune work/marvin/*/.git

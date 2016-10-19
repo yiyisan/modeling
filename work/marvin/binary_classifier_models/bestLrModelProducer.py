@@ -24,7 +24,7 @@ def bestModelProducer(df, target, datamapper, fig_path):
     """
     traindf, testdf = modelfit.prepareDataforTraining(df, datamapper)
 
-    param_grid = {'penalty':['l1','l2']} 
+    param_grid = {'penalty': ['l1','l2']} 
     
     bestModel, accuracy, auc, cv_score = produceBestLRmodel(traindf, testdf, datamapper, param_grid)
     return bestModel, traindf, testdf, accuracy, auc, cv_score
@@ -44,7 +44,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None):
       
     # running grid search to get the best parameter set
     gsearch = GridSearchCV(estimator = LogisticRegression(random_state=10), param_grid = param_grid,
-                           scoring='roc_auc',n_jobs=4,iid=False, cv=5)
+                           scoring='roc_auc', n_jobs=4, iid=False, cv=5)
     gsearch.fit(train, labels_train)
     best_parameters = gsearch.best_estimator_.get_params()
     best_penalty = best_parameters['penalty']

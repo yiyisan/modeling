@@ -46,7 +46,7 @@ def bestModelProducer(data, target, datamapper, figpath):
 
 # <api>
 def parameterGridInitialization(trainX):
-    feature_size = trainX.shape[1]-1  
+    feature_size = trainX.shape[1] - 1  
     train_size = trainX.shape[0]
     
     n_estimators = [1000]
@@ -54,7 +54,7 @@ def parameterGridInitialization(trainX):
     subsample_spc = [0.6, 0.7, 0.8, 0.9]
     colsample_bytree_spc = [0.6, 0.7, 0.8, 0.9]
     
-    gamma_spc = [i/10.0 for i in range(0,5)]   
+    gamma_spc = [i / 10.0 for i in range(0, 5)]   
     reg_alpha_spc = [0, 0.001, 0.01, 0.1, 1, 10, 100]
     
     learning_rate_spc = [0.01, 0.05, 0.1]
@@ -98,7 +98,7 @@ def produceBestXgboostModel(traindf, testdf, datamapper, param_grid1, param_grid
     xgboost_best = XGBClassifier(n_estimators=best_estimators, learning_rate=best_learning_rate,
                                  max_depth=best_max_depth, min_child_weight=best_min_child_weight,
                                  subsample=best_subsample, colsample_bytree=best_colsample_bytree, 
-                                 gamma=best_gamma, reg_alpha=best_reg_alpha, objective='binary:logistic', nthread=4, 
+                                 gamma=best_gamma, reg_alpha=best_reg_alpha, objective='binary:logistic', nthread=4,
                                  scale_pos_weight=1, seed=27)
 
     alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(xgboost_best, datamapper, train, labels_train, test, labels_test, fig_path)
@@ -119,7 +119,7 @@ def _modelfit(alg, datamapper, train, labels_train, test, labels_test, useTrainC
         xgb_param = alg.get_xgb_params()
         xgtrain = xgb.DMatrix(train, label=labels_train)
         cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
-            metrics=['auc'], early_stopping_rounds=early_stopping_rounds)
+                          metrics=['auc'], early_stopping_rounds=early_stopping_rounds)
         alg.set_params(n_estimators=cvresult.shape[0])
     
     #Fit the algorithm on the data
