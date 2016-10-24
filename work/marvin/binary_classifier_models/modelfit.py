@@ -7,7 +7,7 @@
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn import cross_validation #Additional scklearn functions
+from sklearn import cross_validation  # Additional scklearn functions
 
 import matplotlib
 import seaborn as sns
@@ -48,12 +48,15 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
         feature_importances = pd.DataFrame(alg.coef_, columns=feature_indices)
     else:
         raise Exception('unrecognized algorithm')
-    sorted_feature_importances = feature_importances.ix[0, :].abs().sort_values(ascending=False).index[:most_importance_n]
+    sorted_abs_importances = feature_importances.ix[0, :].abs().sort_values(ascending=False)
+    sorted_feature_importances = sorted_abs_importances.index[:most_importance_n]
     feature_importances = feature_importances[sorted_feature_importances]
     # Plot barchart
     sns.plt.clf()
     sns.plt.figure(figsize=(8, 6))
-    sns.barplot(x=feature_importances.columns, y=np.array(feature_importances)[0, :], label='small')
+    sns.barplot(x=feature_importances.columns,
+                y=np.array(feature_importances)[0, :],
+                label='small')
     sns.plt.title('Feature Importances')
     sns.plt.xlabel('Feature')
     sns.plt.xticks(rotation=90)
@@ -61,6 +64,6 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     sns.plt.tight_layout()
     if fig_path is not None:
         sns.plt.savefig(fig_path)
- 
+
     return alg, train_predictions, train_predprob, cv_score
 

@@ -25,7 +25,7 @@ def bestModelProducer(df, target, datamapper, fig_path):
     traindf, testdf = modelfit.prepareDataforTraining(df, datamapper)
 
     param_grid = {'penalty': ['l1', 'l2']}
-    
+
     bestModel, accuracy, auc, cv_score = produceBestLRmodel(traindf, testdf, datamapper,
                                                             param_grid, fig_path)
     return bestModel, traindf, testdf, accuracy, auc, cv_score
@@ -42,7 +42,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     test_array = datamapper.transform(testdf)
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
-      
+
     # running grid search to get the best parameter set
     gsearch = GridSearchCV(estimator=LogisticRegression(random_state=seed),
                            param_grid=param_grid,
@@ -50,13 +50,13 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     gsearch.fit(train, labels_train)
     best_parameters = gsearch.best_estimator_.get_params()
     best_penalty = best_parameters['penalty']
-    
+
     alg = LogisticRegression(penalty=best_penalty, random_state=seed)
     alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(alg, datamapper,
                                                                          train, labels_train,
                                                                          test, labels_test,
                                                                          fig_path=fig_path)
-    
+
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]

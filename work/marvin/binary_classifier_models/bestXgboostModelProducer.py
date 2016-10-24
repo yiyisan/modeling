@@ -4,14 +4,11 @@
 # In[ ]:
 
 # <api>
-import pandas as pd
 import numpy as np
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
 from sklearn import metrics
 from sklearn.grid_search import GridSearchCV
-from sklearn.preprocessing import LabelBinarizer
-import seaborn as sns
 
 import logging
 import work.marvin.binary_classifier_models.modelfit as modelfit
@@ -25,19 +22,21 @@ logger = logging.getLogger(__name__)
 # <api>
 def bestModelProducer(data, target, datamapper, figpath):
     """
-    # auto xgboost model generation, 3 steps:
-    1. estimate optimal model parameters space for gridsearch, depends on sample size and feature size
+    auto xgboost model generation, 3 steps:
+    1. estimate optimal model parameters space for gridsearch,
+       depends on sample size and feature size
     2. run gridsearch to find best parameter set
     3. train the best GBDT model using the best parameter set
     """
     traindf, testdf = modelfit.prepareDataforTraining(data, datamapper)
     train_array = datamapper.transform(traindf)
-    train = train_array[:, :-1] 
+    train = train_array[:, :-1]
 
     # estimate optimal parameters grid space
     param_grid1, param_grid2, param_grid3, param_grid4 = parameterGridInitialization(train)
     alg, accuracy, auc, cv_score = produceBestXgboostModel(traindf, testdf, datamapper,
-                                                           param_grid1, param_grid2, param_grid3, param_grid4,
+                                                           param_grid1, param_grid2,
+                                                           param_grid3, param_grid4,
                                                            figpath)
     return alg, traindf, testdf, accuracy, auc, cv_score
 
@@ -46,7 +45,7 @@ def bestModelProducer(data, target, datamapper, figpath):
 
 # <api>
 def parameterGridInitialization(trainX):
-    feature_size = trainX.shape[1] - 1  
+    feature_size = trainX.shape[1] - 1
     train_size = trainX.shape[0]
 
     n_estimators = [1000]
@@ -54,7 +53,7 @@ def parameterGridInitialization(trainX):
     subsample_spc = [0.6, 0.7, 0.8, 0.9]
     colsample_bytree_spc = [0.6, 0.7, 0.8, 0.9]
 
-    gamma_spc = [i / 10.0 for i in range(0, 5)]   
+    gamma_spc = [i / 10.0 for i in range(0, 5)]
     reg_alpha_spc = [0, 0.001, 0.01, 0.1, 1, 10, 100]
 
     learning_rate_spc = [0.01, 0.05, 0.1]
@@ -65,7 +64,7 @@ def parameterGridInitialization(trainX):
     # set learning_rate, run to get optiomal n_estimators
     param_grid1 = {'n_estimators': n_estimators}
 
-    # most important parameters    
+    # most important parameters
     param_grid2 = {'max_depth': max_depth_spc, 'min_child_weight': min_child_weight_spc,
                    'subsample': subsample_spc, 'colsample_bytree': colsample_bytree_spc}
 
@@ -81,7 +80,9 @@ def parameterGridInitialization(trainX):
 # In[1]:
 
 # <api>
-def produceBestXgboostModel(traindf, testdf, datamapper, param_grid1, param_grid2, param_grid3, param_grid4, fig_path=None, seed=27):
+def produceBestXgboostModel(traindf, testdf, datamapper,
+                            param_grid1, param_grid2, param_grid3, param_grid4,
+                            fig_path=None, seed=27):
     # datamapper transform
     train_array = datamapper.transform(traindf)
     train = train_array[:, :-1]            # 默认label为最后一列
@@ -119,16 +120,17 @@ def produceBestXgboostModel(traindf, testdf, datamapper, param_grid1, param_grid
 def max_depth_space(feature_size):
     if feature_size > 1000:
         max_depth = range(5, 14, 2)
-    else :
-        max_depth = range(3, 10, 2)      
+    else:
+        max_depth = range(3, 10, 2)
     return max_depth
+
 
 # <api>
 def min_child_weight_space(train_size):
     if train_size > 10000:
         min_child_weight = range(3, 8, 1)
-    else :
-        min_child_weight = range(1, 6, 1)      
+    else:
+        min_child_weight = range(1, 6, 1)
     return min_child_weight
 
 
@@ -136,8 +138,9 @@ def min_child_weight_space(train_size):
 
 # <api>
 # train xgBoost to get best n_estimators
-def xgBoostTrainBestn_estimators(alg, dtrain, dtest, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
-    if  not useTrainCV:
+def xgBoostTrainBestn_estimators(alg, dtrain, dtest,
+                                 useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
+    if not useTrainCV:
         return
     xgb_param = alg.get_xgb_params()
     xgtrain = xgb.DMatrix(dtrain, label=dtest)
@@ -150,18 +153,19 @@ def xgBoostTrainBestn_estimators(alg, dtrain, dtest, useTrainCV=True, cv_folds=5
 # In[ ]:
 
 # <api>
-def xgboostGridSearch(train, labels_train, param_grid1, param_grid2, param_grid3, param_grid4, seed=27):
+def xgboostGridSearch(train, labels_train,
+                      param_grid1, param_grid2, param_grid3, param_grid4, seed=27):
 
     estimator = XGBClassifier(max_depth=3, min_child_weight=1, gamma=0, subsample=0.8, learning_rate=0.1,
                               n_estimators=param_grid1['n_estimators'][0], colsample_bytree=0.8,
-                              objective='binary:logistic', 
-                              nthread=4, scale_pos_weight=1, seed=27)
-    
+                              objective='binary:logistic',
+                              nthread=-1, scale_pos_weight=1, seed=27)
+
     best_estimators = xgBoostTrainBestn_estimators(estimator, train, labels_train)
 
-    gsearch1 = GridSearchCV(estimator=XGBClassifier(n_estimators=best_estimators, learning_rate=0.1,
-                                                    gamma=0, objective= 'binary:logistic',
-                                                    nthread=4, scale_pos_weight=1,
+    gsearch1 = GridSearchCV(estimator=XGBClassifier(n_estimators=best_estimators,
+                                                    learning_rate=0.1, gamma=0,
+                                                    objective='binary:logistic', nthread=-1, scale_pos_weight=1,
                                                     seed=27),
                             param_grid=param_grid2, scoring='roc_auc',
                             n_jobs=1, iid=False, cv=5)
@@ -176,7 +180,7 @@ def xgboostGridSearch(train, labels_train, param_grid1, param_grid2, param_grid3
     gsearch2 = GridSearchCV(estimator=XGBClassifier(n_estimators=best_estimators, learning_rate=0.1,
                                                     max_depth=best_max_depth, min_child_weight=best_min_child_weight,
                                                     subsample=best_subsample, colsample_bytree=best_colsample_bytree,
-                                                    objective= 'binary:logistic', nthread=4, scale_pos_weight=1,
+                                                    objective='binary:logistic', nthread=-1, scale_pos_weight=1,
                                                     seed=27),
                             param_grid=param_grid3, scoring='roc_auc',
                             n_jobs=1, iid=False, cv=5)
@@ -187,11 +191,11 @@ def xgboostGridSearch(train, labels_train, param_grid1, param_grid2, param_grid3
     best_reg_alpha = best_parameters["reg_alpha"]
 
     gsearch3 = GridSearchCV(estimator=XGBClassifier(n_estimators=best_estimators,
-                                                      max_depth=best_max_depth, min_child_weight=best_min_child_weight,
-                                                      subsample=best_subsample, colsample_bytree=best_colsample_bytree,
-                                                      gamma=best_gamma, reg_alpha=best_reg_alpha,
-                                                      objective= 'binary:logistic', nthread=4, scale_pos_weight=1,
-                                                      seed=seed),
+                                                    max_depth=best_max_depth, min_child_weight=best_min_child_weight,
+                                                    subsample=best_subsample, colsample_bytree=best_colsample_bytree,
+                                                    gamma=best_gamma, reg_alpha=best_reg_alpha,
+                                                    objective='binary:logistic', nthread=-1, scale_pos_weight=1,
+                                                    seed=seed),
                             param_grid=param_grid4, scoring='roc_auc',
                             n_jobs=1, iid=False, cv=5)
     gsearch3.fit(train, labels_train)
@@ -207,6 +211,5 @@ def xgboostGridSearch(train, labels_train, param_grid1, param_grid2, param_grid3
 
     best_estimators = xgBoostTrainBestn_estimators(estimator, train, labels_train)
 
-    return best_subsample, best_estimators, best_learning_rate, best_max_depth,
-           best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha
+    return best_subsample, best_estimators, best_learning_rate, best_max_depth,            best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha
 

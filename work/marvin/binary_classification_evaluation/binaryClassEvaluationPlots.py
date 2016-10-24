@@ -5,22 +5,12 @@
 
 # <api>
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import classification_report
-from sklearn.metrics import roc_curve, auc
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 
-import scipy
-from scipy.interpolate import InterpolatedUnivariateSpline
 import sklearn.metrics as metrics
 import pandas as pd
-import scipy.stats as stats
-from scipy.stats import ks_2samp
-from scipy import interpolate 
-from matplotlib.pylab import rcParams
 import matplotlib.pyplot as plt 
 
 
@@ -67,11 +57,9 @@ def applyAlgOnTestSet(alg, test):
 
 # <api>
 def greaterThan(a, b):
-    if a > b:
-        return 1
-    else:
-        return 0
-    
+    return 1 if a > b else 0
+
+
 # <api>
 def metricsPlot(x, y, xlab, ylab, title):
     plt.plot(x, y)
@@ -80,11 +68,13 @@ def metricsPlot(x, y, xlab, ylab, title):
     plt.title(title)
     plt.legend(loc='lower right')
     #plt.show()
-    
+
+
 # <api>
 def prec(Y_true, Y_predprob, t): 
     vfunc = np.vectorize(greaterThan) 
     return metrics.precision_score(Y_true, vfunc(Y_predprob, t))
+
 
 # <api>
 def rec(Y_true, Y_predprob, t): 
@@ -98,23 +88,23 @@ def rec(Y_true, Y_predprob, t):
 def roc_curve_plot(Y_true,Y_predprob):
     from sklearn.metrics import roc_curve
     fpr,tpr,thresh = roc_curve(Y_true, Y_predprob)
-    auc = round(auc_calculate(Y_true, Y_predprob), 4)    
-    plt.plot(fpr, tpr, label='ROC-AUC overall,\n AUC Score=' + str(auc))
+    auc = round(auc_calculate(Y_true, Y_predprob), 4)
+    plt.plot(fpr, tpr, label="ROC-AUC overall,\n AUC Score={}".format(auc))
     plt.xlabel("FPR")
     plt.ylabel("TPR")
-    plt.plot([0, 1], [0, 1])    
+    plt.plot([0, 1], [0, 1])
     plt.title("ROC Curve")
-    plt.legend(loc='lower right')
-    #plt.show()
+    plt.legend(loc="lower right")
 
-# <api>
-def precision_recall_curve_plot(Y_true,Y_predprob):
+
+def precision_recall_curve_plot(Y_true, Y_predprob):
     precision,recall,threshold = precision_recall_curve(Y_true, Y_predprob)
-    metricsPlot(precision, recall, "Precision", "Recall", "Precision Vs Recall Curve")
-    
-# <api>
-def precision_cutoff_curve(Y_true,Y_predprob):
-    vfunc = np.vectorize(greaterThan) 
+    metricsPlot(precision, recall,
+                "Precision", "Recall", "Precision Vs Recall Curve")
+
+
+def precision_cutoff_curve(Y_true, Y_predprob):
+    vfunc = np.vectorize(greaterThan)
     max_t = max(Y_predprob)
     t = []
     prec = []
@@ -124,8 +114,8 @@ def precision_cutoff_curve(Y_true,Y_predprob):
             prec.append(metrics.precision_score(Y_true, vfunc(Y_predprob, t[i])))
     metricsPlot(t, prec, "cut-off", "Precision", "Precision Vs Cut-off Curve")
 
-# <api>        
-def recall_cutoff_curve(Y_true,Y_predprob):
+     
+def recall_cutoff_curve(Y_true, Y_predprob):
     vfunc = np.vectorize(greaterThan) 
     max_t = max(Y_predprob)
     t = []
@@ -136,8 +126,8 @@ def recall_cutoff_curve(Y_true,Y_predprob):
             rec.append(metrics.recall_score(Y_true, vfunc(Y_predprob, t[i])))
     metricsPlot(t, rec, "cut-off", "Recall", "Recall Vs Cut-off Curve")
 
-# <api>
-def auc_calculate(Y_true,Y_predprob):
+
+def auc_calculate(Y_true, Y_predprob):
     fpr,tpr,thresh = roc_curve(Y_true,Y_predprob)
     return round(metrics.auc(fpr, tpr),4)
 
@@ -153,7 +143,7 @@ def ks_curve(Y_true, Y_predprob, fig_path):
 
     a1 = a.reset_index(drop=True)
     b1 = b.reset_index(drop=True)
-    
+
     data1, data2 = map(np.asarray, (a1, b1))
     n1 = data1.shape[0]
     n2 = data2.shape[0]
@@ -161,24 +151,24 @@ def ks_curve(Y_true, Y_predprob, fig_path):
     n2 = len(data2)
     data1 = np.sort(data1)
     data2 = np.sort(data2)
-    
+
     data_all = np.concatenate([data1, data2])
-    cdf1 = np.searchsorted(data1, data_all, side='right') / (1.0*n1)
-    cdf2 = np.searchsorted(data2, data_all, side='right') / (1.0*n2)
-    
-    cdf_abs_dif = np.absolute(cdf1-cdf2)
+    cdf1 = np.searchsorted(data1, data_all, side='right') / (1.0 * n1)
+    cdf2 = np.searchsorted(data2, data_all, side='right') / (1.0 * n2)
+
+    cdf_abs_dif = np.absolute(cdf1 - cdf2)
     d = np.max(cdf_abs_dif)
-    
+
     pos1 = -1
     pos2 = -1
     for i in range(len(cdf_abs_dif)):
         if np.isclose(d, cdf_abs_dif[i]):
             pos1, pos2 = cdf1[i], cdf2[i]
             break
-    
+
     y_1 = np.arange(n1) / float(n1)
     y_2 = np.arange(n2) / float(n2)
-    
+
     x_1_idx = []
     for i in range(len(y_1)):
         if np.isclose(pos1, y_1[i]):
@@ -189,9 +179,9 @@ def ks_curve(Y_true, Y_predprob, fig_path):
         if np.isclose(pos2, y_2[i]):
             x_2_idx.append(i)
             break
-            
+
     x_0 = (data1[x_1_idx[0]] + data2[x_2_idx[0]]) / 2.0
-    
+
     plt.clf()
     plt.figure(figsize=(8, 5))
     plt.plot(data1,y_1,label="good sample")
@@ -205,39 +195,42 @@ def ks_curve(Y_true, Y_predprob, fig_path):
     plt.ylabel('F_n(Probability)')
     plt.title('Kolmogorov - Smirnov Chart')
     plt.savefig(fig_path)
-   
+
     return d, x_0, prec(Y_true, Y_predprob, x_0), rec(Y_true, Y_predprob, x_0)
 
-# <api>
+
 def confusionMatrixs(Y_true, Y_predprob, cut_off):
     vfunc = np.vectorize(greaterThan) 
     y_pred = vfunc(Y_predprob, cut_off)
     return confusion_matrix(Y_true, y_pred)
-    
-# <api>
-def keyClassificationMetrics(Y_true,Y_predprob, cut_off):
+
+
+def keyClassificationMetrics(Y_true, Y_predprob, cut_off):
     vfunc = np.vectorize(greaterThan) 
     y_pred = vfunc(Y_predprob, cut_off)
     target_names = ['class 0', 'class 1']
     return classification_report(Y_true, y_pred, target_names=target_names)
 
-# <api>
+
 def dividZeroProcess(a, b):
-    if b==0:
+    if b == 0:
         return -1 
     else:
         return a * 1.0000 / b
 
-# <api>
-# groupCount: 10,20
-# should return a table with GBodds per predprob group (即把predprob按照quantile分为10或者20组，每组的good/bad ratio)
-def GBoddsWRTpredprob(Y_true,Y_predprob,groupCount):
+
+def GBoddsWRTpredprob(Y_true, Y_predprob, groupCount=10):
+    """
+    groupCount: 10,20
+    should return a table with GBodds per predprob group
+    (即把predprob按照quantile分为10或者20组，每组的good/bad ratio)
+    """
     test = pd.DataFrame({'label': Y_true, 'predprob': Y_predprob})
     good = []
     bad = []
     oddsRatio = []
-    
-    if groupCount==10:
+
+    if groupCount == 10:
         quant = []
         for i in range(1, 11, 1):
             quant.append(test['predprob'].quantile(0.1 * i))
@@ -250,7 +243,7 @@ def GBoddsWRTpredprob(Y_true,Y_predprob,groupCount):
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount,bcount))
-            else :
+            else:
                 pro_0 = quant[i - 2]
                 pro_1 = quant[i - 1]
                 df1 = test[test.predprob > pro_0]
@@ -260,8 +253,10 @@ def GBoddsWRTpredprob(Y_true,Y_predprob,groupCount):
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount,bcount)) 
-        oddsDF = pd.DataFrame({'proQuantile':['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'], 
-                               'Prob_1': quant, 'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
+        oddsDF = pd.DataFrame({'proQuantile': ['10%', '20%', '30%', '40%', '50%',
+                                               '60%', '70%', '80%', '90%', '100%'], 
+                               'Prob_1': quant,
+                               'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
     else:
         quant = []
         for i in range(1, 21, 1):
@@ -285,10 +280,12 @@ def GBoddsWRTpredprob(Y_true,Y_predprob,groupCount):
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount, bcount))    
-        oddsDF = pd.DataFrame({'proQuantile': ['5%', '10%', '15%', '20%', '25%', '30%', '35%', '40%', '45%', '50%',
-                                               '55%','60%', '65%', '70%', '75%', '80%', '85%', '90%', '95%', '100%'],
-                               'Prob_1': quant, 'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
-    oddsDF = oddsDF[['proQuantile','Prob_1','good_count','bad_count','odds']]
-    
+        oddsDF = pd.DataFrame({'proQuantile': ['5%', '10%', '15%', '20%', '25%',
+                                               '30%', '35%', '40%', '45%', '50%',
+                                               '55%', '60%', '65%', '70%', '75%',
+                                               '80%', '85%', '90%', '95%', '100%'],
+                               'Prob_1': quant,
+                               'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
+    oddsDF = oddsDF[['proQuantile', 'Prob_1', 'good_count', 'bad_count', 'odds']]
     return oddsDF
 
