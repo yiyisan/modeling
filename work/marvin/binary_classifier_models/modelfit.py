@@ -11,7 +11,6 @@ from sklearn import cross_validation #Additional scklearn functions
 
 import matplotlib
 import seaborn as sns
-import matplotlib.pylab as plt
 
 try:
     from exceptions import Exception
@@ -32,12 +31,14 @@ def prepareDataforTraining(transformed, datamapper, train_size=0.75):
 # In[ ]:
 
 # <api>
-def modelfit(alg, datamapper, train, labels_train, test, labels_test, fig_path=None, cv_folds=5, most_importance_n=20):
+def modelfit(alg, datamapper, train, labels_train, test, labels_test,
+             fig_path=None, cv_folds=5, most_importance_n=20):
     alg.fit(train, labels_train)
     train_predictions = alg.predict(train)
-    train_predprob = alg.predict_proba(train)[:,1]
+    train_predprob = alg.predict_proba(train)[:, 1]
 
-    cv_score = cross_validation.cross_val_score(alg, train, labels_train, cv=cv_folds, n_jobs=cv_folds, scoring='roc_auc')
+    cv_score = cross_validation.cross_val_score(alg, train, labels_train,
+                                                cv=cv_folds, n_jobs=cv_folds, scoring='roc_auc')
 
     feature_list = [mapper.data_ for (name, mapper) in datamapper.features if mapper]
     feature_indices = [feature for sublist in feature_list for feature in sublist]
@@ -52,7 +53,7 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test, fig_path=N
     # Plot barchart
     sns.plt.clf()
     sns.plt.figure(figsize=(8, 6))
-    sns.barplot(x=feature_importances.columns, y=np.array(feature_importances)[0,:], label='small')
+    sns.barplot(x=feature_importances.columns, y=np.array(feature_importances)[0, :], label='small')
     sns.plt.title('Feature Importances')
     sns.plt.xlabel('Feature')
     sns.plt.xticks(rotation=90)

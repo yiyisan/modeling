@@ -27,7 +27,8 @@ def bestModelProducer(df, target, datamapper, fig_path):
     train = train_array[:, :-1] 
     # estimate optimal parameters grid space
     param_grid1, param_grid2 = parameterGridInitialization(train)
-    bestModel, accuracy, auc, cv_score = produceBestGBMmodel(traindf, testdf, datamapper, param_grid1, param_grid2, fig_path)
+    bestModel, accuracy, auc, cv_score = produceBestGBMmodel(traindf, testdf, datamapper,
+                                                             param_grid1, param_grid2, fig_path)
     return bestModel, traindf, testdf, accuracy, auc, cv_score
 
 
@@ -67,7 +68,9 @@ def produceBestGBMmodel(traindf, testdf, datamapper, param_grid1, param_grid2, f
                                           max_features=best_max_feature,
                                           random_state=seed)
 
-    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(gbm_best, datamapper, train, labels_train, test, labels_test,
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(gbm_best, datamapper,
+                                                                         train, labels_train,
+                                                                         test, labels_test,
                                                                          fig_path=fig_path)
 
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
