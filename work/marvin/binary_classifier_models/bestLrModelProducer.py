@@ -50,7 +50,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None):
     best_penalty = best_parameters['penalty']
     
     alg = LogisticRegression(penalty=best_penalty, random_state=10)   
-    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(alg, datamapper, train, labels_train, test, labels_test, printFeatureImportance=False, fig_path=fig_path)
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(alg, datamapper, train, labels_train, test, labels_test, fig_path=fig_path)
     
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)

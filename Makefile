@@ -1,13 +1,7 @@
-.PHONY: init clean lint build package all
+.PHONY: init clean lint package all
 
 init:
 	conda install flake8
-
-build: clean
-	jupyter nbconvert --to python work/marvin/binary_classification_evaluation/*.ipynb
-	jupyter nbconvert --to python work/marvin/binary_classifier_models/*.ipynb
-	jupyter nbconvert --to python work/marvin/dataPrepareforTraining/*.ipynb
-	find . -name "*.py" | xargs sed -i "s/get_ipython\(\)\.magic\(\'matplotlib inline\'\)/matplotlib\.use\(\'Agg\'\)/"
 
 package:
 	python setup.py sdist
@@ -19,6 +13,10 @@ clean:
 	find work -name "*.pyc" -exec rm {} \;
 
 lint: 
-	flake8 --exclude=lib/,bin/ .
+	jupyter nbconvert --to python work/marvin/binary_classification_evaluation/*.ipynb
+	jupyter nbconvert --to python work/marvin/binary_classifier_models/*.ipynb
+	jupyter nbconvert --to python work/marvin/dataPrepareforTraining/*.ipynb
+	find work -name "*.py" | xargs sed -i "s/get_ipython().magic('matplotlib inline')/matplotlib.use('agg')/"
+	flake8 --exclude=lib/,bin/ work
 
-all: init clean build lint
+all: init clean lint

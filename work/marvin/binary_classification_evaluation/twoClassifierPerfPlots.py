@@ -40,24 +40,24 @@ def applyTwoModelsOnDataset(alg_child, alg_parent, testdf, trn_d, parent_end_ind
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
   
-    prob_child = alg_child.predict_proba(test)[:,1]
-    prob_parent = alg_parent.predict_proba(test)[:,1]
+    prob_child = alg_child.predict_proba(test)[:, 1]
+    prob_parent = alg_parent.predict_proba(test)[:, 1]
     
     mainMetricsComparison((labels_test, prob_child), (labels_test, prob_parent), cmpsub_fig_path)
     return prob_parent, prob_child
     
 # <api>
-def mainMetricsComparison((labels_test,test_predprob),(labels_test1,test_predprob1), cmpsub_fig_path):
+def mainMetricsComparison(testX, testY, cmpsub_fig_path):
     # plots: KS, ROC, precision_recall, precision_cutoff, recall_cutoff
     rcParams['figure.figsize'] = 10, 10
-    plt.subplot(2,2,1)
-    roc_curve_plotXY((labels_test,test_predprob),(labels_test1,test_predprob1))
-    plt.subplot(2,2,2)
-    precision_recall_curve_plotXY((labels_test,test_predprob),(labels_test1,test_predprob1))
-    plt.subplot(2,2,3)
-    precision_cutoff_curve((labels_test,test_predprob),(labels_test1,test_predprob1))
-    plt.subplot(2,2,4)
-    recall_cutoff_curve((labels_test,test_predprob),(labels_test1,test_predprob1))
+    plt.subplot(2, 2, 1)
+    roc_curve_plotXY(testX, testY)
+    plt.subplot(2, 2, 2)
+    precision_recall_curve_plotXY(testX, testY)
+    plt.subplot(2, 2, 3)
+    precision_cutoff_curve(testX, testY)
+    plt.subplot(2, 2, 4)
+    recall_cutoff_curve(testX, testY)
     plt.savefig(cmpsub_fig_path)
 
 # <api>
@@ -69,15 +69,14 @@ def greaterThan(a, b):
     
 # <api>
 def metricsPlotXY(metricX, metricyY, xlab, ylab, title, loc):
-    (x,y) = metricX
-    (x1,y1) = metricyY
-    plt.plot(x, y, label = '1st classifier')
-    plt.plot(x1, y1, label = '2nd classifier')
+    x, y = metricX
+    x1, y1 = metricyY
+    plt.plot(x, y, label='1st classifier')
+    plt.plot(x1, y1, label='2nd classifier')
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.title(title)
     plt.legend(loc=loc)
-    #plt.show()
     
 # <api>
 def prec(Y_true, Y_predprob, t): 
@@ -103,14 +102,14 @@ def roc_curve_plotXY(testX, testY):
     Y_trueY, Y_predprobY = testY
     
     from sklearn.metrics import roc_curve
-    fprX, tprX, threshX = roc_curve(Y_trueX,Y_predprobX)
-    fprY, tprY, threshY = roc_curve(Y_trueY,Y_predprobY)
+    fprX, tprX, threshX = roc_curve(Y_trueX, Y_predprobX)
+    fprY, tprY, threshY = roc_curve(Y_trueY, Y_predprobY)
     
-    aucX = round(auc_calculate(Y_trueX,Y_predprobX),4)    
-    aucY = round(auc_calculate(Y_trueY,Y_predprobY),4)   
+    aucX = round(auc_calculate(Y_trueX, Y_predprobX), 4)    
+    aucY = round(auc_calculate(Y_trueY, Y_predprobY), 4)   
     
-    plt.plot(fprX, tprX, label='ROC-AUC overall (1st),\n AUC Score=' + str(aucX))
-    plt.plot(fprY, tprY, label='ROC-AUC overall (2nd),\n AUC Score=' + str(aucY))
+    plt.plot(fprX, tprX, label='ROC-AUC overall (1st),\n AUC Score={}'.format(aucX))
+    plt.plot(fprY, tprY, label='ROC-AUC overall (2nd),\n AUC Score={}'.format(aucY))
     
     plt.xlabel("FPR")
     plt.ylabel("TPR")
@@ -127,7 +126,7 @@ def precision_recall_curve_plotXY(testX, testY):
     precisionX, recallX, thresholdX = precision_recall_curve(Y_trueX, Y_predprobX)
     precisionY, recallY, thresholdY = precision_recall_curve(Y_trueY, Y_predprobY)
     
-    metricsPlotXY((precisionX,recallX), (precisionY,recallY), "Precision", "Recall", "Precision Vs Recall Curve", 'upper right')
+    metricsPlotXY((precisionX, recallX), (precisionY, recallY), "Precision", "Recall", "Precision Vs Recall Curve", 'upper right')
     
 # <api>
 def precision_cutoff_curve(testX, testY):

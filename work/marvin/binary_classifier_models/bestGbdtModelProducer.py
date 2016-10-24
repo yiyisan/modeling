@@ -9,7 +9,6 @@ import numpy as np
 from sklearn import metrics #Additional scklearn functions
 from sklearn.ensemble import GradientBoostingClassifier #GBM modelorithm
 from sklearn.grid_search import GridSearchCV #Perforing grid search
-
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
 
@@ -43,7 +42,7 @@ def initializationGridSearch(df, datamapper):
     param_grid1, param_grid2 = parameterGridInitialization(train)
 
 
-def produceBestGBMmodel(traindf, testdf, datamapper, param_grid1, param_grid2, fig_path=None):
+def produceBestGBMmodel(traindf, testdf, datamapper, param_grid1, param_grid2, fig_path=None, seed=27):
     # datamapper transform
     train_array = datamapper.transform(traindf)
     train = train_array[:, :-1]
@@ -66,7 +65,7 @@ def produceBestGBMmodel(traindf, testdf, datamapper, param_grid1, param_grid2, f
                                           min_samples_split=best_min_samples_split,
                                           subsample=best_subsample,
                                           max_features=best_max_feature,
-                                          random_state=10)
+                                          random_state=seed)
 
     alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(gbm_best, datamapper, train, labels_train, test, labels_test,
                                                                          fig_path=fig_path)
@@ -138,12 +137,13 @@ def parameterGridInitialization(trainX):
 # In[10]:
 
 # <api>
-def gbmGridSearch(train, labels_train, param_grid1, param_grid2):
+def gbmGridSearch(train, labels_train, param_grid1, param_grid2, seed=27):
     gsearch1 = GridSearchCV(estimator=GradientBoostingClassifier(min_samples_split=30,
                                                                    max_features='sqrt',
-                                                                   max_depth = 5,
+                                                                   max_depth=5,
                                                                    random_state=10), 
-                            param_grid=param_grid1, scoring='roc_auc', n_jobs=4, iid=False, cv=5)
+                            param_grid=param_grid1, scoring='roc_auc',
+                            n_jobs=-1, pre_dispatch='2*n_jobs', iid=False, cv=5)
     gsearch1.fit(train, labels_train)
     
     best_parameters = gsearch1.best_estimator_.get_params()
@@ -154,8 +154,9 @@ def gbmGridSearch(train, labels_train, param_grid1, param_grid2):
     gsearch2 = GridSearchCV(estimator = GradientBoostingClassifier(subsample=best_subsample,
                                                                    n_estimators=best_estimators,
                                                                    learning_rate=best_learning_rate,
-                                                                   random_state=10), 
-                            param_grid=param_grid2, scoring='roc_auc', n_jobs=4, iid=False, cv=5)
+                                                                   random_state=seed), 
+                            param_grid=param_grid2, scoring='roc_auc',
+                            n_jobs=-1, pre_dispatch='2*n_jobs', iid=False, cv=5)
     gsearch2.fit(train, labels_train)  
     
     best_parameters2 = gsearch2.best_estimator_.get_params()    

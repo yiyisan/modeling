@@ -92,21 +92,21 @@ def parameterGridInitialization(trainX):
 # In[ ]:
 
 # <api>
-def rfGridSearch(train, labels_train, param_grid):
-    gsearch = GridSearchCV(estimator = RandomForestClassifier(oob_score=True, random_state=10), param_grid = param_grid, scoring='roc_auc',n_jobs=4,iid=False, cv=5)
+def rfGridSearch(train, labels_train, param_grid, seed=27):
+    gsearch = GridSearchCV(estimator=RandomForestClassifier(oob_score=True, random_state=seed),
+                           param_grid = param_grid, scoring='roc_auc', n_jobs=-1,iid=False, cv=5)
     gsearch.fit(train, labels_train)
     best_parameters = gsearch.best_estimator_.get_params()
     best_n_estimators = best_parameters['n_estimators']
     best_max_features = best_parameters['max_features']
     best_min_samples_leaf = best_parameters['min_samples_leaf']
-
     return best_n_estimators, best_max_features, best_min_samples_leaf
 
 
 # In[ ]:
 
 # <api>
-def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None):
+def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
     # datamapper transform
     train_array = datamapper.transform(traindf)
     train = train_array[:, :-1]            # 默认label为最后一列
@@ -116,13 +116,13 @@ def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None):
     labels_test = test_array[:, -1]
 
     # running grid search to get the best parameter set
-    best_n_estimators, best_max_features, best_min_samples_leaf = rfGridSearch(train, labels_train, param_grid)
+    best_n_estimators, best_max_features, best_min_samples_leaf = rfGridSearch(train, labels_train, param_grid, seed=seed)
 
     rf_best = RandomForestClassifier(n_estimators=best_n_estimators,
                                      min_samples_leaf=best_min_samples_leaf,
                                      max_features=best_max_features,
                                      oob_score=True,
-                                     random_state=50)
+                                     random_state=seed)
 
     alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(rf_best, datamapper, train, labels_train, test, labels_test, fig_path)
 

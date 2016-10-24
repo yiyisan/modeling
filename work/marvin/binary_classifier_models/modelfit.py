@@ -9,16 +9,16 @@ import pandas as pd
 import sklearn
 from sklearn import cross_validation #Additional scklearn functions
 
-get_ipython().magic('matplotlib inline')
-import matplotlib.pylab as plt
+import matplotlib
 import seaborn as sns
+import matplotlib.pylab as plt
 
 try:
     from exceptions import Exception
 except:
     pass
 
-plt.rcParams['figure.figsize'] = 8, 4
+matplotlib.use('agg')
 
 
 # In[1]:
@@ -37,17 +37,17 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test, fig_path=N
     train_predictions = alg.predict(train)
     train_predprob = alg.predict_proba(train)[:,1]
 
-    cv_score = cross_validation.cross_val_score(alg, train, labels_train, cv=cv_folds, scoring='roc_auc')
+    cv_score = cross_validation.cross_val_score(alg, train, labels_train, cv=cv_folds, n_jobs=cv_folds, scoring='roc_auc')
 
     feature_list = [mapper.data_ for (name, mapper) in datamapper.features if mapper]
     feature_indices = [feature for sublist in feature_list for feature in sublist]
     if hasattr(alg, 'feature_importances_'):
         feature_importances = pd.DataFrame([alg.feature_importances_], columns=feature_indices)
     elif hasattr(alg, 'coef_'):
-        feature_importances = pd.DataFrame([alg.coef_], columns=feature_indices)
+        feature_importances = pd.DataFrame(alg.coef_, columns=feature_indices)
     else:
         raise Exception('unrecognized algorithm')
-    sorted_feature_importances = feature_importances.ix[0, :].sort_values(ascending=False).index[:most_importance_n]
+    sorted_feature_importances = feature_importances.ix[0, :].abs().sort_values(ascending=False).index[:most_importance_n]
     feature_importances = feature_importances[sorted_feature_importances]
     # Plot barchart
     sns.plt.clf()

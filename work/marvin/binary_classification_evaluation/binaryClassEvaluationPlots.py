@@ -40,26 +40,25 @@ def algEvaluateOnTestSet(alg, testdf, datamapper, ks_fig_path, sub_fig_path):
 
     plt.clf()
     plt.figure(figsize=(8, 8))
-    plt.subplot(2,2,1)
+    plt.subplot(2, 2, 1)
     roc_curve_plot(labels_test, test_predprob)
-    plt.subplot(2,2,2)
+    plt.subplot(2, 2, 2)
     precision_recall_curve_plot(labels_test, test_predprob)
-    plt.subplot(2,2,3)
+    plt.subplot(2, 2, 3)
     precision_cutoff_curve(labels_test, test_predprob)
-    plt.subplot(2,2,4)
+    plt.subplot(2, 2, 4)
     recall_cutoff_curve(labels_test, test_predprob)
     plt.tight_layout()
     plt.savefig(sub_fig_path)
 
     return test_predprob, ks_val, ks_x, p, r
-    
 
 
 # In[3]:
 
 # <api>
 def applyAlgOnTestSet(alg, test):
-    test_predprob = alg.predict_proba(test)[:,1]
+    test_predprob = alg.predict_proba(test)[:, 1]
     test_predictions = alg.predict(test)
     return test_predprob
 
@@ -71,7 +70,7 @@ def greaterThan(a, b):
     if a > b:
         return 1
     else:
-        return 0   
+        return 0
     
 # <api>
 def metricsPlot(x, y, xlab, ylab, title):
@@ -99,8 +98,8 @@ def rec(Y_true, Y_predprob, t):
 def roc_curve_plot(Y_true,Y_predprob):
     from sklearn.metrics import roc_curve
     fpr,tpr,thresh = roc_curve(Y_true, Y_predprob)
-    auc=round(auc_calculate(Y_true,Y_predprob),4)    
-    plt.plot(fpr, tpr, label='ROC-AUC overall,\n AUC Score='+str(auc))
+    auc = round(auc_calculate(Y_true, Y_predprob), 4)    
+    plt.plot(fpr, tpr, label='ROC-AUC overall,\n AUC Score=' + str(auc))
     plt.xlabel("FPR")
     plt.ylabel("TPR")
     plt.plot([0, 1], [0, 1])    
@@ -119,9 +118,9 @@ def precision_cutoff_curve(Y_true,Y_predprob):
     max_t = max(Y_predprob)
     t = []
     prec = []
-    for i in range(0,101,1):
-        if i/100.0000 <= max_t:
-            t.append(i/100.0000)
+    for i in range(0, 101, 1):
+        if i / 100.0000 <= max_t:
+            t.append(i / 100.0000)
             prec.append(metrics.precision_score(Y_true, vfunc(Y_predprob, t[i])))
     metricsPlot(t, prec, "cut-off", "Precision", "Precision Vs Cut-off Curve")
 
@@ -132,8 +131,8 @@ def recall_cutoff_curve(Y_true,Y_predprob):
     t = []
     rec = []
     for i in range(0,101,1):
-        if i/100.0000 <= max_t:
-            t.append(i/100.000)
+        if i / 100.0000 <= max_t:
+            t.append(i / 100.000)
             rec.append(metrics.recall_score(Y_true, vfunc(Y_predprob, t[i])))
     metricsPlot(t, rec, "cut-off", "Recall", "Recall Vs Cut-off Curve")
 
@@ -148,12 +147,12 @@ def auc_calculate(Y_true,Y_predprob):
 # <api>
 def ks_curve(Y_true, Y_predprob, fig_path):
     # Kolmogorov-Smirnov Test
-    df = pd.DataFrame({'Y_truth':Y_true, 'Y_predprob_1':Y_predprob})
+    df = pd.DataFrame({'Y_truth': Y_true, 'Y_predprob_1': Y_predprob})
     a = df[df.Y_truth == 0]['Y_predprob_1']
     b = df[df.Y_truth == 1]['Y_predprob_1']
 
-    a1 = a.reset_index(drop = True)
-    b1 = b.reset_index(drop = True)
+    a1 = a.reset_index(drop=True)
+    b1 = b.reset_index(drop=True)
     
     data1, data2 = map(np.asarray, (a1, b1))
     n1 = data1.shape[0]
@@ -163,9 +162,9 @@ def ks_curve(Y_true, Y_predprob, fig_path):
     data1 = np.sort(data1)
     data2 = np.sort(data2)
     
-    data_all = np.concatenate([data1,data2])
-    cdf1 = np.searchsorted(data1,data_all,side='right')/(1.0*n1)
-    cdf2 = np.searchsorted(data2,data_all,side='right')/(1.0*n2)
+    data_all = np.concatenate([data1, data2])
+    cdf1 = np.searchsorted(data1, data_all, side='right') / (1.0*n1)
+    cdf2 = np.searchsorted(data2, data_all, side='right') / (1.0*n2)
     
     cdf_abs_dif = np.absolute(cdf1-cdf2)
     d = np.max(cdf_abs_dif)
@@ -194,11 +193,12 @@ def ks_curve(Y_true, Y_predprob, fig_path):
     x_0 = (data1[x_1_idx[0]] + data2[x_2_idx[0]]) / 2.0
     
     plt.clf()
+    plt.figure(figsize=(8, 5))
     plt.plot(data1,y_1,label="good sample")
     plt.plot(data2,y_2,label="bad sample")
     plt.legend(loc='lower right')
-    plt.plot([x_0,x_0], [y_1[x_1_idx], y_2[x_2_idx]], linestyle="--")
-    plt.scatter([x_0,x_0], [y_1[x_1_idx], y_2[x_2_idx]], 50, color='orange')
+    plt.plot([x_0, x_0], [y_1[x_1_idx], y_2[x_2_idx]], linestyle="--")
+    plt.scatter([x_0, x_0], [y_1[x_1_idx], y_2[x_2_idx]], 50, color='orange')
     plt.xlim([-0.01, 1.01])
     plt.ylim([-0.01, 1.01])
     plt.xlabel('Probability')
@@ -223,68 +223,71 @@ def keyClassificationMetrics(Y_true,Y_predprob, cut_off):
 
 # <api>
 def dividZeroProcess(a, b):
-    if b==0: return -1 
-    else: return a*1.0000/b
+    if b==0:
+        return -1 
+    else:
+        return a * 1.0000 / b
 
 # <api>
 # groupCount: 10,20
 # should return a table with GBodds per predprob group (即把predprob按照quantile分为10或者20组，每组的good/bad ratio)
 def GBoddsWRTpredprob(Y_true,Y_predprob,groupCount):
-    test = pd.DataFrame({'label':Y_true,'predprob':Y_predprob})
+    test = pd.DataFrame({'label': Y_true, 'predprob': Y_predprob})
     good = []
     bad = []
     oddsRatio = []
     
     if groupCount==10:
         quant = []
-        for i in range(1,11,1):
-            quant.append(test['predprob'].quantile(0.1*i))
-        for i in range(1,11,1):
-            if i==1 :
-                pro_1 = quant[i-1]
-                df = test[test.predprob<=pro_1]
-                gcount = df[df.label==0].shape[0]
-                bcount = df[df.label==1].shape[0]           
+        for i in range(1, 11, 1):
+            quant.append(test['predprob'].quantile(0.1 * i))
+        for i in range(1, 11, 1):
+            if i == 1:
+                pro_1 = quant[i - 1]
+                df = test[test.predprob <= pro_1]
+                gcount = df[df.label == 0].shape[0]
+                bcount = df[df.label == 1].shape[0]           
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount,bcount))
             else :
-                pro_0 = quant[i-2]
-                pro_1 = quant[i-1]
-                df1 = test[test.predprob>pro_0]
-                df = df1[df1.predprob<=pro_1]
-                gcount = df[df.label==0].shape[0]
-                bcount = df[df.label==1].shape[0]           
+                pro_0 = quant[i - 2]
+                pro_1 = quant[i - 1]
+                df1 = test[test.predprob > pro_0]
+                df = df1[df1.predprob <= pro_1]
+                gcount = df[df.label == 0].shape[0]
+                bcount = df[df.label == 1].shape[0]           
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount,bcount)) 
         oddsDF = pd.DataFrame({'proQuantile':['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'], 
-                               'Prob_1':quant, 'good_count':good, 'bad_count':bad, 'odds':oddsRatio})
+                               'Prob_1': quant, 'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
     else:
         quant = []
-        for i in range(1,21,1):
-            quant.append(test['predprob'].quantile(0.05*i))
-        for i in range(1,21,1):
+        for i in range(1, 21, 1):
+            quant.append(test['predprob'].quantile(0.05 * i))
+        for i in range(1, 21, 1):
             if i==1 :
                 pro_1 = quant[i-1]
-                df = test[test.predprob<=pro_1]
-                gcount = df[df.label==0].shape[0]
-                bcount = df[df.label==1].shape[0]           
+                df = test[test.predprob <= pro_1]
+                gcount = df[df.label == 0].shape[0]
+                bcount = df[df.label == 1].shape[0]           
                 good.append(gcount)
                 bad.append(bcount)
                 oddsRatio.append(dividZeroProcess(gcount,bcount))
             else :
-                pro_0 = quant[i-2]
-                pro_1 = quant[i-1]
-                df1 = test[test.predprob>pro_0]
-                df = df1[df1.predprob<=pro_1]
-                gcount = df[df.label==0].shape[0]
-                bcount = df[df.label==1].shape[0]           
+                pro_0 = quant[i - 2]
+                pro_1 = quant[i - 1]
+                df1 = test[test.predprob > pro_0]
+                df = df1[df1.predprob <= pro_1]
+                gcount = df[df.label == 0].shape[0]
+                bcount = df[df.label == 1].shape[0]           
                 good.append(gcount)
                 bad.append(bcount)
-                oddsRatio.append(dividZeroProcess(gcount,bcount))    
-        oddsDF = pd.DataFrame({'proQuantile':['5%', '10%', '15%','20%','25%','30%','35%','40%','45%','50%','55%','60%','65%','70%','75%','80%','85%','90%','95%','100%'],
-                               'Prob_1':quant, 'good_count':good, 'bad_count':bad, 'odds':oddsRatio})
+                oddsRatio.append(dividZeroProcess(gcount, bcount))    
+        oddsDF = pd.DataFrame({'proQuantile': ['5%', '10%', '15%', '20%', '25%', '30%', '35%', '40%', '45%', '50%',
+                                               '55%','60%', '65%', '70%', '75%', '80%', '85%', '90%', '95%', '100%'],
+                               'Prob_1': quant, 'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
     oddsDF = oddsDF[['proQuantile','Prob_1','good_count','bad_count','odds']]
     
     return oddsDF
