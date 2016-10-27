@@ -54,7 +54,7 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     # Plot barchart
     sns.plt.clf()
     sns.plt.figure(figsize=(8, 6))
-    sns.barplot(x=feature_importances.columns,
+    sns.barplot(x=[col.decode("utf-8") for col in feature_importances.columns],
                 y=np.array(feature_importances)[0, :],
                 label='small')
     sns.plt.title('Feature Importances')

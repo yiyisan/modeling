@@ -1,0 +1,6 @@
+from doit.tools import register_doit_as_IPython_magic
+register_doit_as_IPython_magic()
+%load_ext sql
+%load_ext jupyter_cms
+%load_ext watermark.watermark
+%load_ext watermark

@@ -1,7 +1,7 @@
 .PHONY: init clean lint package all
 
 init:
-	conda install flake8
+	conda install flake9
 
 package:
 	python setup.py sdist
@@ -10,6 +10,7 @@ package:
 	conda build --python 3.5 recipe
 
 clean:
+	docker rm marvin_modeling
 	rm -rf work.egg-info
 	find work -name "*.pyc" -exec rm {} \;
 
@@ -21,3 +22,6 @@ lint:
 	flake8 --exclude=lib/,bin/ work
 
 all: init clean lint
+
+run: clean
+	docker run -it --name marvin_modeling -p 18888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/notebook
