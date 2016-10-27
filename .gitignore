@@ -1,9 +1,8 @@
 .ipynb_checkpoints
 *.pyc
 __pycache__
-.jupyter
-.ipython
 .bash_history
 .viminfo
+.condarc
 dist
 work.egg-info

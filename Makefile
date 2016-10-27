@@ -5,6 +5,7 @@ init:
 
 package:
 	python setup.py sdist
+	conda build purge
 	conda build --python 2.7 recipe
 	conda build --python 3.5 recipe
 

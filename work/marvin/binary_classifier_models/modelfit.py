@@ -63,6 +63,7 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     sns.plt.ylabel('Feature Importance Score')
     sns.plt.tight_layout()
     if fig_path is not None:
+        print(fig_path)
         sns.plt.savefig(fig_path)
 
     return alg, train_predictions, train_predprob, cv_score

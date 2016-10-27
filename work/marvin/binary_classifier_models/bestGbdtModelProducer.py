@@ -95,12 +95,8 @@ def n_estimators_space(train_size):
 
 
 def min_samples_split_space(train_size):
-    if train_size > 20000:
-        min_samples_split = range(500, 3001, 200)
-    else :
-        min_samples_split = range(min(train_size, 100),
-                                  min(train_size, 1001), 100)     
-    return min_samples_split
+    return range(min(train_size, 100),
+                 min(train_size, 601), 100)
 
 
 def max_feature_space(feature_size):
@@ -113,11 +109,7 @@ def max_feature_space(feature_size):
 
 
 def max_depth_space(feature_size):
-    if feature_size > 1000:
-        max_depth = range(5, 14, 2)
-    else:
-        max_depth = range(3, 10, 2)
-    return max_depth
+    return [3, 5, 7, 9]
 
 
 def parameterGridInitialization(trainX):
