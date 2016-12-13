@@ -11,6 +11,10 @@ from sklearn.grid_search import GridSearchCV
 
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # In[ ]:
 
@@ -42,7 +46,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     test_array = datamapper.transform(testdf)
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
-
+    logger.debug("begin gridsearch")
     # running grid search to get the best parameter set
     gsearch = GridSearchCV(estimator=LogisticRegression(random_state=seed),
                            param_grid=param_grid,
@@ -50,7 +54,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     gsearch.fit(train, labels_train)
     best_parameters = gsearch.best_estimator_.get_params()
     best_penalty = best_parameters['penalty']
-
+    logger.debug("best parameters:{}".format(best_parameters))
     alg = LogisticRegression(penalty=best_penalty, random_state=seed)
     alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(alg, datamapper,
                                                                          train, labels_train,
@@ -61,4 +65,10 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
     return alg, accuracy, auc, cv_score
+
+
+# In[ ]:
+
+def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
+    return produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
 

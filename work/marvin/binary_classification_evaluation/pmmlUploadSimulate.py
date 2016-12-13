@@ -1,13 +1,20 @@
 
 # coding: utf-8
 
+# # PMML  上传测试模块
+# ## 通过测试环境的批量测试才可上线
+
+# In[1]:
+
+# <help>
+
+
 # In[1]:
 
 # <api>
 import os
 import pandas as pd
 import requests
-from IPython.display import display
 
 try:
     from exceptions import Exception
@@ -21,7 +28,7 @@ logger = logging.getLogger(__name__)
 # In[2]:
 
 # <api>
-def upload_pmml(model, url="http://localhost:8080", name=None):
+def upload_pmml(model, url="http://openscoring:8080", name=None):
     headers = {"Content-Type": "application/xml"}
     try:
         with open(model) as fh:
@@ -29,7 +36,8 @@ def upload_pmml(model, url="http://localhost:8080", name=None):
             if not name:
                 pathname = os.path.basename(model)
                 name = pathname.rstrip(".pmml")
-            pmmlresult = requests.put("{}/openscoring/model/{}".format(url, name), data=pmml, headers=headers)
+            pmmlresult = requests.put("{}/openscoring/model/{}".format(url, name),
+                                      data=pmml, headers=headers)
             return pmmlresult.json()
     except Exception as e:
         logger.error(e)
@@ -39,10 +47,10 @@ def upload_pmml(model, url="http://localhost:8080", name=None):
 # In[3]:
 
 # <api>
-def simulate_pmml(data, model, target, url="http://localhost:8080"):
+def simulate_pmml(data, model, target, url="http://openscoring:8080"):
     batchtest = data.to_dict()
     batchbody = [{"id": int(idx),
-                  "arguments": {k: batchtest[k][idx].astype(object) 
+                  "arguments": {k: batchtest[k][idx].astype(object)
                                 if type(batchtest[k][idx]).__module__ == 'numpy' else batchtest[k][idx]
                                 for k in batchtest.keys() if  k != target},
                   "target": batchtest[target][idx]} 
@@ -60,7 +68,14 @@ def simulate_pmml(data, model, target, url="http://localhost:8080"):
 # In[6]:
 
 # <api>
-def simulate_compare_pmml(data, model, target,test_predprob, url="http://localhost:8080"):
+def simulate_compare_pmml(data, model, target, test_predprob, url="http://openscoring:8080"):
+    """
+    simulate_compare_pmml, comparing PMML evaluator predprob with evaluted predprob on test dataset
+    data: test DataFrame
+    model: model_id in string
+    target: target data field in string
+    test_predprob: testset predprob
+    """
     batchtest = data.to_dict()
     batchbody = [{"id": int(idx),
                   "arguments": {k: batchtest[k][idx].astype(object)
@@ -71,24 +86,29 @@ def simulate_compare_pmml(data, model, target,test_predprob, url="http://localho
     prob_pmml = {}
     for testinst in batchbody:
         postbody = testinst.copy()
-        y_true = postbody.pop("target")
+        postbody.pop("target")
         pmmlresult = requests.post("{}/openscoring/model/{}".format(url, model), json=postbody)
         ans = pmmlresult.json()
-        prob_pmml.update({postbody['id']: ans['result']['probability_1']})
+        if ans and ans.get('result'):
+            prob_pmml.update({postbody['id']: ans['result']['probability_1']})
 
     prob_alg = {data.index[i]: test_predprob[i] for i in range(len(test_predprob))}
-    count_compare,compare_detail = probability_statistics(prob_pmml, prob_alg, data)
-    logger.info('--- Consistency Compare ---')
-    display(count_compare)
-    logger.info('--- Inconsistency Detail ---')
-    display(compare_detail)
+    count_compare, compare_detail = probability_statistics(prob_pmml, prob_alg, data)
     return count_compare, compare_detail
+
+
+# In[ ]:
+
+def undeploy_model(model_id, url="http://openscoring:8080"):
+    ret = requests.delete('{}/openscoring/model/{}'.format(url, model_id))
+    if ret.status_code != 200:
+        raise Exception('Undeploy Error: statusCode={}'.format(ret.status_code))
 
 
 # In[5]:
 
 # <api>
-def probability_statistics(prob_pmml,prob_alg,data):
+def probability_statistics(prob_pmml, prob_alg, data):
     
     prob_pmml_approx = {key: round(prob_pmml[key], 4) for key in prob_pmml}
     prob_alg_approx = {key: round(prob_alg[key], 4) for key in prob_alg}
@@ -106,8 +126,10 @@ def probability_statistics(prob_pmml,prob_alg,data):
             local_prob_list.append(prob_alg_approx[key])
             server_prob_list.append(prob_pmml_approx[key])
     num_inconsist = len(prob_pmml_approx) - num_consist
-    count_compare = pd.DataFrame({'ConsistentNumber': [num_consist], 'InconsistentNumber': [num_inconsist]})
-    compare_detail = pd.DataFrame({'IndexID': index_id_list, 'LocalProbability': local_prob_list,
+    count_compare = pd.DataFrame({'ConsistentNumber': [num_consist],
+                                  'InconsistentNumber': [num_inconsist]})
+    compare_detail = pd.DataFrame({'IndexID': index_id_list,
+                                   'LocalProbability': local_prob_list,
                                    'ServerProbability': server_prob_list})
     compare_detail = pd.merge(compare_detail, data,
                               how='inner', left_on=['IndexID'], right_index=True)

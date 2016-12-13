@@ -50,7 +50,6 @@ def algEvaluateOnTestSet(alg, testdf, datamapper, ks_fig_path, sub_fig_path):
 # <api>
 def applyAlgOnTestSet(alg, test):
     test_predprob = alg.predict_proba(test)[:, 1]
-    test_predictions = alg.predict(test)
     return test_predprob
 
 

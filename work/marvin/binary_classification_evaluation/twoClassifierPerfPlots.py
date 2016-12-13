@@ -5,25 +5,30 @@
 
 # <api>
 import numpy as np
-from sklearn.metrics import classification_report
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 import sklearn.metrics as metrics
 
 from matplotlib.pylab import rcParams
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 
 
 # In[ ]:
 
 # <api>
-# alg: current used model (parent_model)
-# alg2: new model iterated on incremental data (child_model)
-# testfresh: new model 训练过程中，划分train/test，testfresh: test里面并且是新增的数据
-def applyTwoModelsOnDataset(alg_child, alg_parent, testdf, trn_d, parent_end_index, datamapper, cmpsub_fig_path):
 
+def applyTwoModelsOnDataset(alg_child, alg_parent, testdf, trn_d,
+                            parent_end_index, datamapper, cmpsub_fig_path):
+    """
+    new model训练过程中，划分train/test, 确保test里面并且是新增的数据
+    alg: current used model (parent_model)
+    alg2: new model iterated on incremental data (child_model)
+    testdf: newly added data
+    traindf: old data
+    """
     testdf_index = testdf.index.tolist()
-    fresh_testdf_index = [index for index in testdf_index if index >= parent_end_index]
+    fresh_testdf_index = [index for index in testdf_index
+                          if index >= parent_end_index]
     fresh_testdf = trn_d.loc[fresh_testdf_index]
 
     test_array = datamapper.transform(fresh_testdf)
@@ -33,8 +38,13 @@ def applyTwoModelsOnDataset(alg_child, alg_parent, testdf, trn_d, parent_end_ind
     prob_child = alg_child.predict_proba(test)[:, 1]
     prob_parent = alg_parent.predict_proba(test)[:, 1]
 
-    mainMetricsComparison((labels_test, prob_child), (labels_test, prob_parent), cmpsub_fig_path)
+    mainMetricsComparison((labels_test, prob_child),
+                          (labels_test, prob_parent),
+                          cmpsub_fig_path)
     return prob_parent, prob_child
+
+
+# In[ ]:
 
 # <api>
 def mainMetricsComparison(testX, testY, cmpsub_fig_path):
@@ -107,7 +117,6 @@ def roc_curve_plotXY(testX, testY):
     plt.plot([0, 1], [0, 1])    
     plt.title("ROC Curve")
     plt.legend(loc='lower right')
-    #plt.show()
 
 
 # <api>
@@ -132,16 +141,16 @@ def precision_cutoff_curve(testX, testY):
     tX = []
     precX = []
     for i in range(0, 101, 1):
-        if i / 100.0000 <= max_tX:
-            tX.append(i / 100.0000)
+        if i / 100. <= max_tX:
+            tX.append(i / 100.)
             precX.append(metrics.precision_score(Y_trueX, vfunc(Y_predprobX, tX[i])))
             
     max_tY = max(Y_predprobY)
     tY = []
     precY = []
     for i in range(0, 101, 1):
-        if i / 100.0000 <= max_tY:
-            tY.append(i / 100.0000)
+        if i / 100. <= max_tY:
+            tY.append(i / 100.)
             precY.append(metrics.precision_score(Y_trueY, vfunc(Y_predprobY, tY[i])))
             
     metricsPlotXY((tX, precX), (tY, precY),
@@ -159,16 +168,16 @@ def recall_cutoff_curve(testX, testY):
     tX = []
     recallX = []
     for i in range(0, 101, 1):
-        if i / 100.0000 <= max_tX:
-            tX.append(i / 100.0000)
+        if i / 100. <= max_tX:
+            tX.append(i / 100.)
             recallX.append(metrics.recall_score(Y_trueX, vfunc(Y_predprobX, tX[i])))
 
     max_tY = max(Y_predprobY)
     tY = []
     recallY = []
     for i in range(0, 101, 1):
-        if i / 100.0000 <= max_tY:
-            tY.append(i / 100.0000)
+        if i / 100. <= max_tY:
+            tY.append(i / 100.)
             recallY.append(metrics.recall_score(Y_trueY, vfunc(Y_predprobY, tY[i])))
 
     metricsPlotXY((tX, recallX), (tY, recallY),

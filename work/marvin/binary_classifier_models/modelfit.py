@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn import cross_validation  # Additional scklearn functions
-
+from enum import Enum
 import matplotlib
 import seaborn as sns
 
@@ -17,7 +17,50 @@ try:
 except:
     pass
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 matplotlib.use('agg')
+
+
+# In[ ]:
+
+class BinaryClassifier(Enum):
+    GBM = 'GBM'
+    XGB = 'XGBOOST'
+    LGB = 'LightGBM'
+    RF = 'RF'
+    LR = 'LR'
+
+    @property
+    def model(self):
+        if self is BinaryClassifier.GBM:
+            import work.marvin.binary_classifier_models.bestGbdtModelProducer
+            return work.marvin.binary_classifier_models.bestGbdtModelProducer
+        elif self is BinaryClassifier.XGB:
+            import work.marvin.binary_classifier_models.bestXgboostModelProducer
+            return work.marvin.binary_classifier_models.bestXgboostModelProducer
+        elif self is BinaryClassifier.RF:
+            import work.marvin.binary_classifier_models.bestRfModelProducer
+            return work.marvin.binary_classifier_models.bestRfModelProducer
+        elif self is BinaryClassifier.LR:
+            import work.marvin.binary_classifier_models.bestLrModelProducer
+            return work.marvin.binary_classifier_models.bestLrModelProducer
+
+    def produceBestModel(self, traindf, testdf, dfm, fig_dir):
+        param_grid = self.configspace(traindf, dfm)
+        logger.debug(param_grid)
+        return self.model.produceBestModel(traindf, testdf, dfm, param_grid, fig_dir)
+
+    def configspace(self, traindf, dfm):
+        if self is BinaryClassifier.LR:
+            return [{'penalty': ['l1', 'l2']}]
+        else:
+            train_array = dfm.transform(traindf)
+            train = train_array[:, :-1]
+            param_grid = self.model.parameterGridInitialization(train)
+            return [param_grid] if self is BinaryClassifier.RF else param_grid
 
 
 # In[1]:
@@ -51,6 +94,7 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     sorted_abs_importances = feature_importances.ix[0, :].abs().sort_values(ascending=False)
     sorted_feature_importances = sorted_abs_importances.index[:most_importance_n]
     feature_importances = feature_importances[sorted_feature_importances]
+    logger.debug("plot feature_importances")
     # Plot barchart
     sns.plt.clf()
     sns.plt.figure(figsize=(8, 6))
@@ -63,7 +107,6 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     sns.plt.ylabel('Feature Importance Score')
     sns.plt.tight_layout()
     if fig_path is not None:
-        print(fig_path)
         sns.plt.savefig(fig_path)
 
     return alg, train_predictions, train_predprob, cv_score

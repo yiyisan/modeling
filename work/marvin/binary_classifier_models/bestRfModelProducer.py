@@ -142,3 +142,9 @@ def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
 
     return alg, accuracy, auc, cv_score
 
+
+# In[ ]:
+
+def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
+    return produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
+

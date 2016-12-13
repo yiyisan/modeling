@@ -12,7 +12,7 @@ from sklearn.grid_search import GridSearchCV  # Perforing grid search
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
 
-# In[8]:
+# In[ ]:
 
 # <api>
 def bestModelProducer(df, target, datamapper, fig_path):
@@ -44,6 +44,9 @@ def initializationGridSearch(df, datamapper):
     param_grid1, param_grid2 = parameterGridInitialization(train)
 
 
+# In[8]:
+
+# <api>
 def produceBestGBMmodel(traindf, testdf, datamapper,
                         param_grid1, param_grid2,
                         fig_path=None, seed=27):
@@ -81,6 +84,15 @@ def produceBestGBMmodel(traindf, testdf, datamapper,
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
 
     return alg, accuracy, auc, cv_score
+
+
+# In[ ]:
+
+def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
+    param_grid1, param_grid2 = param_grid
+    return produceBestGBMmodel(traindf, testdf, datamapper,
+                               param_grid1, param_grid2,
+                               fig_path, seed)
 
 
 # In[9]:
