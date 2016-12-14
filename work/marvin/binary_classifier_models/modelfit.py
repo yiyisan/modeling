@@ -71,7 +71,7 @@ def prepareDataforTraining(transformed, datamapper, train_size=0.75):
     return traindf, testdf
 
 
-# In[ ]:
+# In[1]:
 
 # <api>
 def modelfit(alg, datamapper, train, labels_train, test, labels_test,
@@ -107,7 +107,14 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     sns.plt.ylabel('Feature Importance Score')
     sns.plt.tight_layout()
     if fig_path is not None:
-        sns.plt.savefig(fig_path)
-
+        try:
+            sns.plt.savefig(fig_path)
+        except Exception as e:
+            raise Exception("save fig {} error".format(fig_path))
     return alg, train_predictions, train_predprob, cv_score
+
+
+# In[ ]:
+
+
 

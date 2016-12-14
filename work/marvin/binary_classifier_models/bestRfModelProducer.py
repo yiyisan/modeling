@@ -56,7 +56,7 @@ def max_feature_space(feature_size):
         max_feature = range(int(fs_sqrt-3), int(fs_sqrt*1.50), 2)
     else :
         max_feature = range(int(fs_sqrt), int(fs_sqrt*1.50), 2)
-    return max_feature
+    return list(max_feature)
 
 
 # <api>
@@ -68,7 +68,7 @@ def n_estimators_space(train_size):
         n_estimators_spc = range(50, 301, 20)
     else:
         n_estimators_spc = range(20, 100, 10)
-    return n_estimators_spc
+    return list(n_estimators_spc)
 
 
 # <api>

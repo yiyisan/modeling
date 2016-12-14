@@ -125,7 +125,7 @@ def max_depth_space(feature_size):
         max_depth = range(5, 14, 2)
     else:
         max_depth = range(3, 10, 2)
-    return max_depth
+    return list(max_depth)
 
 
 # <api>
@@ -134,7 +134,7 @@ def min_child_weight_space(train_size):
         min_child_weight = range(3, 8, 1)
     else:
         min_child_weight = range(1, 6, 1)
-    return min_child_weight
+    return list(min_child_weight)
 
 
 # In[ ]:

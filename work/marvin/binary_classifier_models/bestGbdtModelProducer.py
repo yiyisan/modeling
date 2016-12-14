@@ -103,12 +103,11 @@ def n_estimators_space(train_size):
         n_estimators_spc = range(200, 1001, 200)
     else:
         n_estimators_spc = range(50, 201, 50)
-    return n_estimators_spc
+    return list(n_estimators_spc)
 
 
 def min_samples_split_space(train_size):
-    return range(min(train_size, 100),
-                 min(train_size, 601), 100)
+    return list(range(min(train_size, 100), min(train_size, 601), 100))
 
 
 def max_feature_space(feature_size):
@@ -117,7 +116,7 @@ def max_feature_space(feature_size):
         max_feature = range(int(fs_sqrt - 3), int(fs_sqrt * 1.50), 2)
     else:
         max_feature = range(int(fs_sqrt), int(fs_sqrt * 1.50), 2)    
-    return max_feature
+    return list(max_feature)
 
 
 def max_depth_space(feature_size):
@@ -151,9 +150,9 @@ def parameterGridInitialization(trainX):
 # <api>
 def gbmGridSearch(train, labels_train, param_grid1, param_grid2, seed=27):
     gsearch1 = GridSearchCV(estimator=GradientBoostingClassifier(min_samples_split=30,
-                                                                   max_features='sqrt',
-                                                                   max_depth=5,
-                                                                   random_state=10),
+                                                                 max_features='sqrt',
+                                                                 max_depth=5,
+                                                                 random_state=10),
                             param_grid=param_grid1, scoring='roc_auc',
                             n_jobs=-1, pre_dispatch='2*n_jobs', iid=False, cv=5)
     gsearch1.fit(train, labels_train)
