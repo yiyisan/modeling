@@ -25,7 +25,7 @@ lint: build
 	flake8 --exclude=lib/,bin/ work
 
 test: clean build
-	docker run -it --name marvin_modeling -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling py.test
+	docker run -it --name marvin_modeling -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:test py.test
 
 install: build package
 	 rsync -avhP /opt/anaconda/conda-bld/linux-64/marvin_*.tar.bz2 newreg.creditx.com:/var/lib/docker/pkgs/creditx/linux-64
@@ -34,4 +34,4 @@ install: build package
 all: init clean build lint
 
 run: clean
-	docker run -it --name marvin_modeling -e PASSWORD=debug -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling
+	docker run -it --name marvin_modeling -e PASSWORD=debug -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:devel

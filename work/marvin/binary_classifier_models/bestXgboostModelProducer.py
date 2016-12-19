@@ -33,11 +33,10 @@ def bestModelProducer(data, target, datamapper, figpath):
     train = train_array[:, :-1]
 
     # estimate optimal parameters grid space
-    param_grid1, param_grid2, param_grid3, param_grid4 = parameterGridInitialization(train)
-    alg, accuracy, auc, cv_score = produceBestXgboostModel(traindf, testdf, datamapper,
-                                                           param_grid1, param_grid2,
-                                                           param_grid3, param_grid4,
-                                                           figpath)
+    configspace = configSpaceInitialization(train)
+    alg, accuracy, auc, cv_score = optimizeBestXgboostModel(traindf, testdf,
+                                                            datamapper, configspace,
+                                                            figpath)
     return alg, traindf, testdf, accuracy, auc, cv_score
 
 
@@ -75,6 +74,80 @@ def parameterGridInitialization(trainX):
     param_grid4 = {'learning_rate': learning_rate_spc}
 
     return param_grid1, param_grid2, param_grid3, param_grid4
+
+
+# In[ ]:
+
+# <api>
+def configSpaceInitialization(trainX):      
+    if trainX.shape[1] >= 10:
+        skopt_grid = {'max_depth': (3, 9),
+                      'learning_rate': (0.01, 0.1), 
+                      'n_estimators': (50, 800), 
+                      'objective' : Categorical(('binary:logistic',)),
+                      'gamma': (0, 3), 
+                      'min_child_weight': (1, 5),
+                      'subsample': (0.2, 0.9),
+                      'colsample_bytree': (0.2, 0.9),
+                      'reg_alpha': (1, 5),
+                      'scale_pos_weight': (1, 5)}
+    else:
+        skopt_grid = {'max_depth': (2, 3),
+                      'learning_rate': (0.01, 0.1), 
+                      'n_estimators': (20, 100), 
+                      'objective' : Categorical(('binary:logistic',)),
+                      'gamma': (0, 3),
+                      'min_child_weight': (1, 5),
+                      'subsample': (0.9, 1),
+                      'colsample_bytree': (0.9, 1),
+                      'reg_alpha': (1, 5),
+                      'scale_pos_weight': (1, 5)}
+    return skopt_grid
+
+
+# In[ ]:
+
+def searchBestParamsSkoptGbrt(train, labels_train, skopt_grid, search_alg='gbm'):
+    experiment_setting = [(search_alg, skopt_grid, {'n_calls': 200})]
+    experiment_result  = run_experiments(experiment_setting, train, labels_train)
+    max_index = texperiment_result[0]['Test accuracy'].index(max(t))
+    return experiment_result[0]['Best parameters'][max_index]
+
+
+# In[ ]:
+
+# <api>
+def optimizeBestXgboostModel(traindf, testdf, datamapper,
+                             configspace, search_alg='gbm',
+                             fig_path=None, seed=27):
+    # datamapper transform
+    train_array = datamapper.transform(traindf)
+    train = train_array[:, :-1]            # 默认label为最后一列
+    labels_train = train_array[:, -1]      # 默认label为最后一列
+    test_array = datamapper.transform(testdf)
+    test = test_array[:, :-1]
+    labels_test = test_array[:, -1]
+
+    # running grid search to get the best parameter set 
+    best_params = searchBestParamsSkoptGbrt(train, labels_train, configspace, search_alg)
+    # train a gbm using the best parameter set
+    xgboost_best = XGBClassifier(n_estimators=best_estimators, learning_rate=best_learning_rate,
+                                 max_depth=best_max_depth, min_child_weight=best_min_child_weight,
+                                 subsample=best_subsample, colsample_bytree=best_colsample_bytree,
+                                 gamma=best_gamma, reg_alpha=best_reg_alpha,
+                                 objective='binary:logistic', nthread=-1,
+                                 scale_pos_weight=1, seed=seed)
+
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(xgboost_best, datamapper,
+                                                                         train, labels_train,
+                                                                         test, labels_test,
+                                                                         fig_path)
+
+    accuracy = metrics.accuracy_score(labels_train, train_predictions)
+    auc = metrics.roc_auc_score(labels_train, train_predprob)
+    cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
+
+    return alg, accuracy, auc, cv_score
 
 
 # In[1]:
