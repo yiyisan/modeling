@@ -60,10 +60,11 @@ def produceBestGBMmodel(traindf, testdf, datamapper,
     labels_test = test_array[:, -1]
 
     # running grid search to get the best parameter set  
-    best_subsample, best_estimators, best_learning_rate, best_max_depth, best_max_feature, best_min_samples_split = gbmGridSearch(train,
-                                                                                                                                  labels_train,
-                                                                                                                                  param_grid1,
-                                                                                                                                  param_grid2)
+    (best_subsample, best_estimators, best_learning_rate, best_max_depth,
+     best_max_feature, best_min_samples_split) = gbmGridSearch(train,
+                                                               labels_train,
+                                                               param_grid1,
+                                                               param_grid2)
 
     # train a gbm using the best parameter set
     gbm_best = GradientBoostingClassifier(learning_rate=best_learning_rate,
@@ -74,25 +75,17 @@ def produceBestGBMmodel(traindf, testdf, datamapper,
                                           max_features=best_max_feature,
                                           random_state=seed)
 
-    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(gbm_best, datamapper,
-                                                                         train, labels_train,
-                                                                         test, labels_test,
-                                                                         fig_path=fig_path)
+    (alg, train_predictions,
+     train_predprob, cv_score) = modelfit.modelfit(gbm_best, datamapper,
+                                                  train, labels_train,
+                                                  test, labels_test,
+                                                  fig_path=fig_path)
 
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
 
     return alg, accuracy, auc, cv_score
-
-
-# In[ ]:
-
-def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
-    param_grid1, param_grid2 = param_grid
-    return produceBestGBMmodel(traindf, testdf, datamapper,
-                               param_grid1, param_grid2,
-                               fig_path, seed)
 
 
 # In[9]:
@@ -139,10 +132,56 @@ def parameterGridInitialization(trainX):
     param_grid1 = {'subsample': subsample_spc, 'n_estimators': n_estimators_spc,
                    'learning_rate': learning_rate_spc}
     # tree specific parameters
-    param_grid2 = {'max_depth': max_depth_spc, 'max_features': max_feature_spc, 
+    param_grid2 = {'max_depth': max_depth_spc, 'max_features': max_feature_spc,
                    'min_samples_split': min_samples_split_spc}
 
     return param_grid1, param_grid2
+
+
+# In[ ]:
+
+# <api>
+def configSpaceInitialization(trainX):
+    feature_size = trainX.shape[1] - 1
+    train_size = trainX.shape[0]
+
+    if train_size >= 1000:
+        skopt_grid = {'max_features': (2, feature_size),
+                      'max_depth': (2, 9),
+                      'learning_rate': (0.01, 0.2),
+                      'min_samples_split': (50, 500),
+                      'n_estimators': (50, 800),
+                      'subsample': (0.2, 0.9)}
+    else:
+        skopt_grid = {'max_features': (2, feature_size),
+                      'max_depth': (2, 9),       
+                      'learning_rate': (0.01, 0.2),
+                      'min_samples_split': (20, train_size),
+                      'n_estimators': (50, 800),
+                      'subsample': (0.2, 0.9)}
+    return skopt_grid
+
+
+# In[ ]:
+
+def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
+    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
+    experiment_result = modelfit.run_experiments(experiment_setting,
+                                                 train, labels_train,
+                                                 GradientBoostingClassifier)
+    test_accuracy = experiment_result[0]['Test accuracy']
+    max_index = test_accuracy.index(max(test_accuracy))
+    best_params = experiment_result[0]['Best parameters'][max_index]
+    return best_params
+
+
+# In[ ]:
+
+def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
+    param_grid1, param_grid2 = param_grid
+    return produceBestGBMmodel(traindf, testdf, datamapper,
+                               param_grid1, param_grid2,
+                               fig_path, seed)
 
 
 # In[10]:
@@ -163,9 +202,9 @@ def gbmGridSearch(train, labels_train, param_grid1, param_grid2, seed=27):
     best_learning_rate = best_parameters['learning_rate']
 
     gsearch2 = GridSearchCV(estimator=GradientBoostingClassifier(subsample=best_subsample,
-                                                                   n_estimators=best_estimators,
-                                                                   learning_rate=best_learning_rate,
-                                                                   random_state=seed),
+                                                                 n_estimators=best_estimators,
+                                                                 learning_rate=best_learning_rate,
+                                                                 random_state=seed),
                             param_grid=param_grid2, scoring='roc_auc',
                             n_jobs=-1, pre_dispatch='2*n_jobs', iid=False, cv=5)
     gsearch2.fit(train, labels_train)
@@ -175,5 +214,44 @@ def gbmGridSearch(train, labels_train, param_grid1, param_grid2, seed=27):
     best_max_feature = best_parameters2["max_features"]
     best_min_samples_split = best_parameters2["min_samples_split"]
 
-    return best_subsample, best_estimators, best_learning_rate, best_max_depth, best_max_feature, best_min_samples_split
+    return (best_subsample, best_estimators, best_learning_rate,
+            best_max_depth, best_max_feature, best_min_samples_split)
+
+
+# In[ ]:
+
+# <api>
+def optimizeBestModel(traindf, testdf, datamapper,
+                      configspace, search_alg,
+                      fig_path=None, n_calls=100, seed=27):
+    # datamapper transform
+    train_array = datamapper.transform(traindf)
+    train = train_array[:, :-1]            # 默认label为最后一列
+    labels_train = train_array[:, -1]      # 默认label为最后一列
+    test_array = datamapper.transform(testdf)
+    test = test_array[:, :-1]
+    labels_test = test_array[:, -1]
+
+    # running skopt.gbrt_search to get the best parameter set
+    # search_alg: skopt_gbrt_search, skopt_gp_search, skopt_forest_search
+    best_params = searchBestParamsSkopt(train, labels_train, configspace, search_alg, n_calls)
+
+    gbdt_best = GradientBoostingClassifier(learning_rate=best_params['learning_rate'],
+                                           n_estimators=best_params['n_estimators'],
+                                           max_depth=best_params['max_depth'],
+                                           min_samples_split=best_params['min_samples_split'],
+                                           subsample=best_params['subsample'],
+                                           max_features=best_params['max_features'],
+                                           random_state=seed)
+
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(gbdt_best, datamapper,
+                                                                         train, labels_train,
+                                                                         test, labels_test,
+                                                                         fig_path)
+
+    accuracy = metrics.accuracy_score(labels_train, train_predictions)
+    auc = metrics.roc_auc_score(labels_train, train_predprob)
+    cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
+
+    return alg, accuracy, auc, cv_score
 

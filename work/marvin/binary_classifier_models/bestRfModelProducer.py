@@ -13,6 +13,9 @@ from sklearn.grid_search import GridSearchCV  # Perforing grid search
 import sklearn.metrics as metrics
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 # In[ ]:
 
@@ -32,12 +35,14 @@ def bestModelProducer(df, target, datamapper, fig_path):
     train = train_array[:, :-1]
     # estimate optimal parameters grid space
     param_grid = parameterGridInitialization(train)
-    bestModel, accuracy, auc, cv_score = produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path)
+    bestModel, accuracy, auc, cv_score = produceBestRFmodel(traindf, testdf,
+                                                            datamapper,
+                                                            param_grid, fig_path)
     return bestModel, traindf, testdf, accuracy, auc, cv_score
 
 
 def initializationGridSearch(df, datamapper):
-    traindf, testdf = modelfit.prepareDataforTraining(df, datamapper) 
+    traindf, testdf = modelfit.prepareDataforTraining(df, datamapper)
     train_array = datamapper.transform(traindf)
     train = train_array[:, :-1]
     # estimate optimal parameters grid space
@@ -54,7 +59,7 @@ def max_feature_space(feature_size):
     fs_sqrt = math.sqrt(feature_size)
     if fs_sqrt > 10:
         max_feature = range(int(fs_sqrt-3), int(fs_sqrt*1.50), 2)
-    else :
+    else:
         max_feature = range(int(fs_sqrt), int(fs_sqrt*1.50), 2)
     return list(max_feature)
 
@@ -93,7 +98,42 @@ def parameterGridInitialization(trainX):
     return param_grid
 
 
-# ## Best RF Model Producer 
+# In[ ]:
+
+# <api>
+def configSpaceInitialization(trainX):
+    feature_size = trainX.shape[1] - 1
+    train_size = trainX.shape[0]
+
+    if train_size >= 1000:
+        skopt_grid = {'max_features': (2, feature_size),
+                      'min_samples_leaf': (50, 500),
+                      'min_samples_split': (50, 500),
+                      'n_estimators': (50, 800)}
+    else:
+        skopt_grid = {'max_features': (2, feature_size),
+                      'min_samples_leaf': (20, train_size),
+                      'min_samples_split': (20, train_size),
+                      'n_estimators': (20, 200)}
+    return skopt_grid
+
+
+# ## Best RF Model Producer
+
+# In[ ]:
+
+# <api>
+def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
+    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
+
+    experiment_result = modelfit.run_experiments(experiment_setting,
+                                                 train, labels_train, RandomForestClassifier)
+
+    test_accuracy = experiment_result[0]['Test accuracy']
+    max_index = test_accuracy.index(max(test_accuracy))
+    best_params = experiment_result[0]['Best parameters'][max_index]
+    return best_params
+
 
 # In[ ]:
 
@@ -123,7 +163,10 @@ def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     labels_test = test_array[:, -1]
 
     # running grid search to get the best parameter set
-    best_n_estimators, best_max_features, best_min_samples_leaf = rfGridSearch(train, labels_train, param_grid, seed=seed)
+    best_n_estimators, best_max_features, best_min_samples_leaf = rfGridSearch(train,
+                                                                               labels_train,
+                                                                               param_grid,
+                                                                               seed=seed)
 
     rf_best = RandomForestClassifier(n_estimators=best_n_estimators,
                                      min_samples_leaf=best_min_samples_leaf,
@@ -147,4 +190,40 @@ def produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
 
 def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
     return produceBestRFmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
+
+
+# In[ ]:
+
+# <api>
+def optimizeBestModel(traindf, testdf, datamapper,
+                      configspace, search_alg,
+                      fig_path=None, n_calls=100, seed=27):
+    # datamapper transform
+    train_array = datamapper.transform(traindf)
+    train = train_array[:, :-1]            # 默认label为最后一列
+    labels_train = train_array[:, -1]      # 默认label为最后一列
+    test_array = datamapper.transform(testdf)
+    test = test_array[:, :-1]
+    labels_test = test_array[:, -1]
+
+    # running grid search to get the best parameter set
+    best_params = searchBestParamsSkopt(train, labels_train,
+                                        configspace, search_alg, n_calls)
+    # train a randomforest using the best parameter set
+    rf_best = RandomForestClassifier(n_estimators=best_params['n_estimators'],
+                                     min_samples_leaf=best_params['min_samples_leaf'],
+                                     max_features=best_params['max_features'],
+                                     oob_score=True,
+                                     random_state=seed)
+
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(rf_best, datamapper,
+                                                                         train, labels_train,
+                                                                         test, labels_test,
+                                                                         fig_path)
+
+    accuracy = metrics.accuracy_score(labels_train, train_predictions)
+    auc = metrics.roc_auc_score(labels_train, train_predprob)
+    cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
+
+    return alg, accuracy, auc, cv_score
 

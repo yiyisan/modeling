@@ -10,9 +10,10 @@ from xgboost.sklearn import XGBClassifier
 from sklearn import metrics
 from sklearn.grid_search import GridSearchCV
 
-import logging
+from skopt.space import Categorical
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +34,10 @@ def bestModelProducer(data, target, datamapper, figpath):
     train = train_array[:, :-1]
 
     # estimate optimal parameters grid space
-    configspace = configSpaceInitialization(train)
-    alg, accuracy, auc, cv_score = optimizeBestXgboostModel(traindf, testdf,
-                                                            datamapper, configspace,
-                                                            figpath)
+    configspace = parameterGridInitialization(train)
+    alg, accuracy, auc, cv_score = produceBestXgboostModel(traindf, testdf,
+                                                     datamapper, configspace,
+                                                     figpath)
     return alg, traindf, testdf, accuracy, auc, cv_score
 
 
@@ -64,8 +65,10 @@ def parameterGridInitialization(trainX):
     param_grid1 = {'n_estimators': n_estimators}
 
     # most important parameters
-    param_grid2 = {'max_depth': max_depth_spc, 'min_child_weight': min_child_weight_spc,
-                   'subsample': subsample_spc, 'colsample_bytree': colsample_bytree_spc}
+    param_grid2 = {'max_depth': max_depth_spc,
+                   'min_child_weight': min_child_weight_spc,
+                   'subsample': subsample_spc,
+                   'colsample_bytree': colsample_bytree_spc}
 
     # regularization parameters
     param_grid3 = {'gamma': gamma_spc, 'reg_alpha': reg_alpha_spc}
@@ -84,7 +87,7 @@ def configSpaceInitialization(trainX):
         skopt_grid = {'max_depth': (3, 9),
                       'learning_rate': (0.01, 0.1), 
                       'n_estimators': (50, 800), 
-                      'objective' : Categorical(('binary:logistic',)),
+                      'objective': Categorical(('binary:logistic',)),
                       'gamma': (0, 3), 
                       'min_child_weight': (1, 5),
                       'subsample': (0.2, 0.9),
@@ -95,7 +98,7 @@ def configSpaceInitialization(trainX):
         skopt_grid = {'max_depth': (2, 3),
                       'learning_rate': (0.01, 0.1), 
                       'n_estimators': (20, 100), 
-                      'objective' : Categorical(('binary:logistic',)),
+                      'objective': Categorical(('binary:logistic',)),
                       'gamma': (0, 3),
                       'min_child_weight': (1, 5),
                       'subsample': (0.9, 1),
@@ -107,47 +110,13 @@ def configSpaceInitialization(trainX):
 
 # In[ ]:
 
-def searchBestParamsSkoptGbrt(train, labels_train, skopt_grid, search_alg='gbm'):
-    experiment_setting = [(search_alg, skopt_grid, {'n_calls': 200})]
-    experiment_result  = run_experiments(experiment_setting, train, labels_train)
-    max_index = texperiment_result[0]['Test accuracy'].index(max(t))
-    return experiment_result[0]['Best parameters'][max_index]
-
-
-# In[ ]:
-
-# <api>
-def optimizeBestXgboostModel(traindf, testdf, datamapper,
-                             configspace, search_alg='gbm',
-                             fig_path=None, seed=27):
-    # datamapper transform
-    train_array = datamapper.transform(traindf)
-    train = train_array[:, :-1]            # 默认label为最后一列
-    labels_train = train_array[:, -1]      # 默认label为最后一列
-    test_array = datamapper.transform(testdf)
-    test = test_array[:, :-1]
-    labels_test = test_array[:, -1]
-
-    # running grid search to get the best parameter set 
-    best_params = searchBestParamsSkoptGbrt(train, labels_train, configspace, search_alg)
-    # train a gbm using the best parameter set
-    xgboost_best = XGBClassifier(n_estimators=best_estimators, learning_rate=best_learning_rate,
-                                 max_depth=best_max_depth, min_child_weight=best_min_child_weight,
-                                 subsample=best_subsample, colsample_bytree=best_colsample_bytree,
-                                 gamma=best_gamma, reg_alpha=best_reg_alpha,
-                                 objective='binary:logistic', nthread=-1,
-                                 scale_pos_weight=1, seed=seed)
-
-    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(xgboost_best, datamapper,
-                                                                         train, labels_train,
-                                                                         test, labels_test,
-                                                                         fig_path)
-
-    accuracy = metrics.accuracy_score(labels_train, train_predictions)
-    auc = metrics.roc_auc_score(labels_train, train_predprob)
-    cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
-
-    return alg, accuracy, auc, cv_score
+def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
+    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
+    experiment_result  = modelfit.run_experiments(experiment_setting, train, labels_train, XGBClassifier)
+    test_accuracy = experiment_result[0]['Test accuracy']
+    max_index = test_accuracy.index(max(test_accuracy))
+    best_params = experiment_result[0]['Best parameters'][max_index]
+    return best_params
 
 
 # In[1]:
@@ -316,4 +285,45 @@ def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, see
     return produceBestXgboostModel(traindf, testdf, datamapper,
                                    param_grid1, param_grid2, param_grid3, param_grid4,
                                    fig_path, seed)
+
+
+# In[ ]:
+
+# <api>
+def optimizeBestModel(traindf, testdf, datamapper,
+                      configspace, search_alg,
+                      fig_path=None, n_calls=100, seed=27):
+    # datamapper transform
+    train_array = datamapper.transform(traindf)
+    train = train_array[:, :-1]            # 默认label为最后一列
+    labels_train = train_array[:, -1]      # 默认label为最后一列
+    test_array = datamapper.transform(testdf)
+    test = test_array[:, :-1]
+    labels_test = test_array[:, -1]
+
+    # running grid search to get the best parameter set 
+    best_params = searchBestParamsSkopt(train, labels_train, configspace, search_alg, n_calls)
+    # train a gbm using the best parameter set
+    xgboost_best = XGBClassifier(n_estimators=best_params['n_estimators'],
+                                 learning_rate=best_params['learning_rate'],
+                                 max_depth=best_params['max_depth'],
+                                 min_child_weight=best_params['min_child_weight'],
+                                 subsample=best_params['subsample'],
+                                 colsample_bytree=best_params['colsample_bytree'],
+                                 gamma=best_params['gamma'],
+                                 reg_alpha=best_params['reg_alpha'],
+                                 scale_pos_weight=best_params['scale_pos_weight'],
+                                 objective='binary:logistic',
+                                 nthread=-1, seed=seed)
+
+    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(xgboost_best, datamapper,
+                                                                         train, labels_train,
+                                                                         test, labels_test,
+                                                                         fig_path)
+
+    accuracy = metrics.accuracy_score(labels_train, train_predictions)
+    auc = metrics.roc_auc_score(labels_train, train_predprob)
+    cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
+
+    return alg, accuracy, auc, cv_score
 

@@ -17,6 +17,11 @@ import pandas as pd
 import requests
 
 try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+try:
     from exceptions import Exception
 except:
     pass
@@ -44,25 +49,21 @@ def upload_pmml(model, url="http://openscoring:8080", name=None):
         raise Exception('post pmml failed')
 
 
-# In[3]:
+# In[ ]:
 
 # <api>
 def simulate_pmml(data, model, target, url="http://openscoring:8080"):
-    batchtest = data.to_dict()
-    batchbody = [{"id": int(idx),
-                  "arguments": {k: batchtest[k][idx].astype(object)
-                                if type(batchtest[k][idx]).__module__ == 'numpy' else batchtest[k][idx]
-                                for k in batchtest.keys() if  k != target},
-                  "target": batchtest[target][idx]} 
-                 for idx in batchtest[target].keys()]
-    testresult = []
-    for testinst in batchbody:
-        postbody = testinst.copy()
-        y_true = postbody.pop("target")
-        pmmlresult = requests.post("{}/openscoring/model/{}".format(url, model), json=postbody)
-        ans = pmmlresult.json()
-        testresult.append([ans['result'][target], y_true])
-    return pd.DataFrame(testresult, columns=["predict", "true"])
+    datafields = set(data.columns) - set([target])
+    testbuffer = StringIO()
+    data[list(datafields)].to_csv(testbuffer, sep=",")
+    testbuffer.seek(0)
+    fileresponse = requests.post("{}/openscoring/model/{}/csv?delimiterChar=,".format(url, model),
+                                 headers={'Content-type': 'text/plain'}, data=testbuffer)
+    outputbuffer = StringIO()
+    outputbuffer.write(fileresponse.text)
+    outputbuffer.seek(0)
+    testresult = pd.read_csv(outputbuffer)
+    return pd.concat([testresult["probability_1"], data[target]], axis=1)
 
 
 # In[6]:
@@ -81,7 +82,7 @@ def simulate_compare_pmml(data, model, target, test_predprob, url="http://opensc
                   "arguments": {k: batchtest[k][idx].astype(object)
                                 if type(batchtest[k][idx]).__module__ == 'numpy' else batchtest[k][idx]
                                 for k in batchtest.keys() if  k != target},
-                  "target": batchtest[target][idx]} 
+                  "target": batchtest[target][idx]}
                  for idx in batchtest[target].keys()]
     prob_pmml = {}
     for testinst in batchbody:

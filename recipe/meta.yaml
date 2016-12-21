@@ -1,4 +1,4 @@
-{% set version = "0.0.2" %}
+{% set version = "0.0.3" %}
 package:
   name: marvin_modeling
   version: {{ version }}
@@ -17,28 +17,22 @@ build:
 
   # If this is a new build for the same version, increment the build
   # number. If you do not include this key, it defaults to 0.
-  number: 0
+  number: 2
 
 requirements:
   build:
     - python
     - notebook >=4.0.0,<5.0
     - ipython >=4.1.0
-    - jupyter_cms
-    - pandas
-    - seaborn
-    - scikit-learn
-    - sklearn-pandas
-    - sklearn2pmml
 
   run:
     - python
     - notebook >=4.0.0,<5.0
     - ipython >=4.1.0
-    - jupyter_cms
     - pandas
     - seaborn
     - scikit-learn
+    - scikit-optimize
     - sklearn-pandas
     - sklearn2pmml
 

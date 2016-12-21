@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 def bestModelProducer(df, target, datamapper, fig_path):
     """
     # auto LR model generation, 3 steps:
-    1. estimate optimal model parameters space for gridsearch, depends on sample size and feature size
+    1. estimate optimal model parameters space for gridsearch,
+       depends on sample size and feature size
     2. run gridsearch to find best parameter set
     3. train the best LR model using the best parameter set
     """
@@ -47,7 +48,6 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     test_array = datamapper.transform(testdf)
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
-    logger.debug("begin gridsearch")
     # running grid search to get the best parameter set
     gsearch = GridSearchCV(estimator=LogisticRegression(random_state=seed),
                            param_grid=param_grid,
@@ -57,10 +57,11 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     best_penalty = best_parameters['penalty']
     logger.debug("best parameters:{}".format(best_parameters))
     alg = LogisticRegression(penalty=best_penalty, random_state=seed)
-    alg, train_predictions, train_predprob, cv_score = modelfit.modelfit(alg, datamapper,
-                                                                         train, labels_train,
-                                                                         test, labels_test,
-                                                                         fig_path=fig_path)
+    (alg, train_predictions, train_predprob,
+     cv_score) = modelfit.modelfit(alg, datamapper,
+                                   train, labels_train,
+                                   test, labels_test,
+                                   fig_path=fig_path)
 
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
@@ -71,5 +72,11 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
 # In[ ]:
 
 def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
+    return produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
+
+
+# In[ ]:
+
+def optimizeBestModel(traindf, testdf, datamapper, param_grid, search_alg=None, fig_path=None, seed=27):
     return produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
 

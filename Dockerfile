@@ -11,4 +11,7 @@ RUN apt-get update && apt-get install -y openjdk-7-jdk tree vim && \
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 
-RUN conda install --yes pytest
+RUN conda install --yes pytest scikit-optimize 
+RUN bash -c "source activate python2 && \
+     conda install pytest scikit-optimize && \
+          . deactivate"

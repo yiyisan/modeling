@@ -5,15 +5,15 @@ init:
 
 package:
 	python setup.py sdist
+	rm /opt/anaconda/conda-bld/src_cache/work*.tar.gz -rf
 	conda build purge
 	conda build --python 2.7 recipe
 	conda build --python 3.5 recipe
 
 clean:
-	-docker rm marvin_modeling
 	rm -rf work.egg-info
-	find work -name "__pycache__" -exec rm {} \;
-	find work -name "*.pyc" -exec rm {} \;
+	-sudo find work -name "__pycache__" -exec rm -rf {} \;
+	-sudo find work -name "*.pyc" -exec rm {} \;
 
 build:
 	jupyter nbconvert --to python work/marvin/binary_classification_evaluation/*.ipynb
@@ -24,14 +24,15 @@ build:
 lint: build
 	flake8 --exclude=lib/,bin/ work
 
-test: clean build
-	docker run -it --name marvin_modeling -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:test py.test
+test: build
+	-docker rm marvin_modeling_test
+	docker run -it --name marvin_modeling_test -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:test py.test
 
 install: build package
 	 rsync -avhP /opt/anaconda/conda-bld/linux-64/marvin_*.tar.bz2 newreg.creditx.com:/var/lib/docker/pkgs/creditx/linux-64
-	 ssh newreg.creditx.com 'bash -s' < index.sh
-
-all: init clean build lint
+	 ssh newreg.creditx.com "bash -c 'cd /var/lib/docker/pkgs/creditx/linux-64; /home/weiyan/miniconda3/bin/conda index'"
 
 run: clean
-	docker run -it --name marvin_modeling -e PASSWORD=debug -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:devel
+	-docker kill marvin_modeling
+	-docker rm marvin_modeling
+	docker run -it -d --name marvin_modeling -e PASSWORD=debug -p 28888:8888 -v `pwd`:/home/creditx registry.creditx.com:5000/marvin_modeling:devel

@@ -200,6 +200,40 @@ def is_binary(ftr_vlst):
     return 2 == len(uniq_sp)
 
 
+def missing_ivt(mis_val, col):
+    if col not in mis_val:
+        return 'as_is'
+    if isinstance(mis_val[col], tuple) and 'mean' != mis_val[col][0]:
+        return 'as_missing'
+    elif 'drop row'.lower() == mis_val[col]:
+        return 'return_invalid'
+    else:
+        raise Exception("""Invalid missing treatment
+        of feature: {}""".format(col))
+
+
+def onehot_encoder_with_missing(trn_series):
+    unary = (trn_series.unique()[0] == 1)
+    binary_with_na = is_binary(trn_series) and 'CreditX-NA' in set(trn_series)
+    if unary or binary_with_na:
+        return LabelEncoder()
+    else:
+        return LabelBinarizer()
+
+
+def continuous_feature_transform(ftr_trf, col):
+    prep = None
+    if col in ftr_trf:
+        if 'norm' == ftr_trf[col]:
+            prep = MinMaxScaler(copy=False)
+        elif 'log' == ftr_trf[col]:
+            prep = FunctionTransformer(np.log)
+        elif 'log1p' == ftr_trf[col]:
+            prep = FunctionTransformer(np.log1p, kw_args=None)
+        prep.name = ftr_trf[col]
+    return prep
+
+
 # In[13]:
 
 # <api>
@@ -217,70 +251,42 @@ def dataMapperBuilder(trn_d, categ_ftr, conti_ftr, invalid_ftr=None, mis_val=Non
     ftr_trf = ftr_trf if ftr_trf else {}
     c_map = []
     for col in trn_d.columns:
-        dom = None
+        prep = []
+        op_lst = []
         if col in categ_ftr:
-            ivt = 'as_is'
-            if col in mis_val:
-                if isinstance(mis_val[col], tuple) and 'mean' != mis_val[col][0]:
-                    ivt = 'as_missing'
-                elif 'drop row'.lower() == mis_val[col]:
-                    ivt = 'return_invalid'
-                else:
-                    raise Exception("""Invalid missing treatment
-                    of categorical feature: {}""".format(col))
+            ivt = missing_ivt(mis_val, col)
             if 'as_missing' == ivt:
-                if trn_d[col].unique()[0] == 1 or (is_binary(trn_d[col]) and 'CreditX-NA' in set(trn_d[col])):
-                    prep = LabelEncoder()
-                else:
-                    prep = LabelBinarizer()
+                encoder = onehot_encoder_with_missing(trn_d[col])
+                prep.append(encoder.fit(trn_d[col]))
+                missing_value_treatment = mis_val.get(col, ('asMode', None))[0]
+                missing_value_replacement = mis_val.get(col, (None, None))[1]
                 dom = CategoricalDomain(invalid_value_treatment=ivt,
                                         invalid_default='CreditX-NA',
-                                        missing_value_treatment=mis_val.get(col, ('asMode', None))[0],
-                                        missing_value_replacement=mis_val.get(col, (None, None))[1])
+                                        missing_value_treatment=missing_value_treatment,
+                                        missing_value_replacement=missing_value_replacement)
             else:
-                prep = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
+                encoder = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
+                prep.append(encoder.fit(trn_d[col]))
                 dom = CategoricalDomain(invalid_value_treatment=ivt)
-            prep = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
-            prep.fit(trn_d[col])
             dom.fit(trn_d[col], name=col)
-            c_map.append(([col], [dom, prep]))
+            op_lst.append(dom)
+            op_lst.extend(prep)
         elif col in invalid_ftr:
             dom = OrdinalDomain(field_usage_treatment="supplementary")
             dom.fit(trn_d[col], name=col)
-            c_map.append(([col], [dom]))
+            op_lst.append(dom)
         elif col in conti_ftr:
-            op_lst = []
-            ivt = 'as_is'
-            if col in mis_val:
-                if isinstance(mis_val[col], tuple) and 'as new class' != mis_val[col][0]:
-                    ivt = 'as_missing'
-                elif 'drop row' == mis_val[col]:
-                    ivt = 'return_invalid'
-                else:
-                    raise Exception("""Invalid missing treatment
-                     of continuous feature: {}""".format(col))
-
+            ivt = missing_ivt(mis_val, col)
+            if 'as_missing' == ivt and 'mean' == mis_val[col]:
+                prep.append(Imputer().fit(trn_d[col]))
+            prep.append(continuous_feature_transform(ftr_trf, col).fit(trn_d[col]))
             dom = ContinuousDomain(invalid_value_treatment=ivt)
             dom.fit(trn_d[col], name=col)
             op_lst.append(dom)
-
-            if 'as_missing' == ivt and 'mean' == mis_val[col]:
-                prep = Imputer()
-                prep.fit(trn_d[col])
-                op_lst.append(prep)
-            if col in ftr_trf:
-                if 'norm' == ftr_trf[col]:
-                    prep = MinMaxScaler(copy=False)
-                elif 'log' == ftr_trf[col]:
-                    prep = FunctionTransformer(np.log)
-                elif 'log1p' == ftr_trf[col]:
-                    prep = FunctionTransformer(np.log1p, kw_args=None)
-                prep.name = ftr_trf[col]
-                prep.fit(trn_d[col])
-                op_lst.append(prep)
-            c_map.append(([col], op_lst))
+            op_lst.extend(prep)
         else:
-            c_map.append(([col], None))
+            op_lst = None
+        c_map.append(([col], op_lst))
     return DataFrameMapper(c_map)
 
 
@@ -306,7 +312,7 @@ def dataMapperPrepare(trn_d, parent_dfm, target_col=None):
         raise Exception('df_mapper error')
 
     # domain ftr check
-    invalid_ftr = [col for feature, mapper in parent_dfm.features 
+    invalid_ftr = [col for feature, mapper in parent_dfm.features
                    if mapper and mapper.domain_ == 'ordinaldomain'
                    for col in feature]
     categ_ftr = [col for feature, mapper in parent_dfm.features
@@ -346,7 +352,9 @@ def dataMapperPrepare(trn_d, parent_dfm, target_col=None):
     mis_val = {}
 
     # missing value treatment
-    for (name, treatment), (_, defaultVal) in zip(missing_value_treatment, missing_value_replacement):
+    for col_treatment, col_replacement in zip(missing_value_treatment, missing_value_replacement):
+        name, treatment = col_treatment
+        _, defaultVal = col_replacement
         if not isinstance(name, list):
             cols = [name]
         else:
@@ -365,7 +373,7 @@ def dataMapperPrepare(trn_d, parent_dfm, target_col=None):
 # <api>
 def buildTrainMapper(data, target, id_column=None):
     (transformed, categorical_features,
-     continueous_features,invalid_feature) = prepare_for_training(data, target, id_column)
+     continueous_features, invalid_feature) = prepare_for_training(data, target, id_column)
     datamapper = dataMapperBuilder(transformed, categorical_features, continueous_features)
     return transformed, datamapper
 
@@ -375,7 +383,7 @@ def buildTrainMapper(data, target, id_column=None):
 # <api>
 def prepare_for_training(data, target, id_column=None):
     """
-    prepare_for_training shortcuts
+    prepare_for_training shortcuts: using pandas infer
     data: train data
     target: label
     id_column: drop columns
@@ -386,18 +394,17 @@ def prepare_for_training(data, target, id_column=None):
     transformed.insert(transformed.shape[1], target, tmp)
 
     if id_column and id_column in transformed.columns:
+        invalid_features = transformed[id_column]
         transformed.drop(id_column, axis=1, inplace=True)
 
-    invalid_features = []
-
     contineous_describe = transformed.describe()
-    continueous_features = set(contineous_describe.columns) - set([target]) - set(invalid_features)
-    categorical_features = set(transformed.columns) - set(continueous_features) - set([target]) - set(invalid_features)
-
+    non_features = set([target]) | set(invalid_features)
+    continueous_features = set(contineous_describe.columns) - non_features
+    categorical_features = set(transformed.columns) - set(continueous_features) - non_features
     for feature in categorical_features:
-        transformed[feature] = transformed[feature].astype('category')       
+        transformed[feature] = transformed[feature].astype('category')
     for feature in continueous_features:
-        transformed[feature] = transformed[feature].astype('float32') 
+        transformed[feature] = transformed[feature].astype('float32')
 
     return transformed, categorical_features, continueous_features, invalid_features
 
