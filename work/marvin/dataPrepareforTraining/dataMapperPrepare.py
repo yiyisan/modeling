@@ -313,7 +313,7 @@ def dataMapperBuilder(trn_d, categ_ftr, conti_ftr, invalid_ftr=None, mis_val=Non
     return DataFrameMapper(c_map)
 
 
-# In[19]:
+# In[14]:
 
 # <api>
 def dataMapperPrepare(trn_d, parent_dfm, target_col=None):
@@ -432,7 +432,7 @@ def prepare_for_training(data, target, id_column=None):
     return transformed, categorical_features, continueous_features, invalid_features
 
 
-# In[24]:
+# In[17]:
 
 if __name__ == "__main__":
     a = pd.DataFrame([["1", 2, 3, 1], ["4", 5, 6, 1], ["7", 8, 9, 1]])
