@@ -89,6 +89,14 @@ class FtrTransFunc(Enum):
         else:
             raise NotImplementedError
 
+    def apply(self, series, val=None):
+        after = self.method.fit_transform(series)
+        if 'category' != series.dtype.name and contain_nan(after):
+            raise Exception(ftr + ' contains nan when transformed by ' + self)
+        if 'category' != series.dtype.name and contain_inf(after):
+            raise Exception(ftr + ' contains inf when transformed by ' + self)
+        return after
+
 
 # In[5]:
 
@@ -105,6 +113,16 @@ def b64_file_data(fig_path):
 # <api>
 def drop_row(data, ftr):
     data.dropna(how='any', subset=[ftr], inplace=True)
+
+
+def contain_nan(series):                                  
+    where = np.where(np.isnan(series))
+    return 0 != len(where[0])
+
+
+def contain_inf(series):                                  
+    where = np.where(np.isinf(series))
+    return 0 != len(where[0])
 
 
 # In[7]:
@@ -253,39 +271,44 @@ def dataMapperBuilder(trn_d, categ_ftr, conti_ftr, invalid_ftr=None, mis_val=Non
     for col in trn_d.columns:
         prep = []
         op_lst = []
-        if col in categ_ftr:
-            ivt = missing_ivt(mis_val, col)
-            if 'as_missing' == ivt:
-                encoder = onehot_encoder_with_missing(trn_d[col])
-                prep.append(encoder.fit(trn_d[col]))
-                missing_value_treatment = mis_val.get(col, ('asMode', None))[0]
-                missing_value_replacement = mis_val.get(col, (None, None))[1]
-                dom = CategoricalDomain(invalid_value_treatment=ivt,
-                                        invalid_default='CreditX-NA',
-                                        missing_value_treatment=missing_value_treatment,
-                                        missing_value_replacement=missing_value_replacement)
+        try:
+            if col in categ_ftr:
+                ivt = missing_ivt(mis_val, col)
+                if 'as_missing' == ivt:
+                    encoder = onehot_encoder_with_missing(trn_d[col])
+                    prep.append(encoder.fit(trn_d[col]))
+                    missing_value_treatment = mis_val.get(col, ('asMode', None))[0]
+                    missing_value_replacement = mis_val.get(col, (None, None))[1]
+                    dom = CategoricalDomain(invalid_value_treatment=ivt,
+                                            invalid_default='CreditX-NA',
+                                            missing_value_treatment=missing_value_treatment,
+                                            missing_value_replacement=missing_value_replacement)
+                else:
+                    encoder = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
+                    prep.append(encoder.fit(trn_d[col]))
+                    dom = CategoricalDomain(invalid_value_treatment=ivt)
+                dom.fit(trn_d[col], name=col)
+                op_lst.append(dom)
+                op_lst.extend(prep)
+            elif col in invalid_ftr:
+                dom = OrdinalDomain(field_usage_treatment="supplementary")
+                dom.fit(trn_d[col], name=col)
+                op_lst.append(dom)
+            elif col in conti_ftr:
+                ivt = missing_ivt(mis_val, col)
+                if 'as_missing' == ivt and 'mean' == mis_val[col]:
+                    prep.append(Imputer().fit(trn_d[col]))
+                ftr_trans = continuous_feature_transform(ftr_trf, col)
+                if ftr_trans:
+                    prep.append(ftr_trans.fit(trn_d[col]))
+                dom = ContinuousDomain(invalid_value_treatment=ivt)
+                dom.fit(trn_d[col], name=col)
+                op_lst.append(dom)
+                op_lst.extend(prep)
             else:
-                encoder = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
-                prep.append(encoder.fit(trn_d[col]))
-                dom = CategoricalDomain(invalid_value_treatment=ivt)
-            dom.fit(trn_d[col], name=col)
-            op_lst.append(dom)
-            op_lst.extend(prep)
-        elif col in invalid_ftr:
-            dom = OrdinalDomain(field_usage_treatment="supplementary")
-            dom.fit(trn_d[col], name=col)
-            op_lst.append(dom)
-        elif col in conti_ftr:
-            ivt = missing_ivt(mis_val, col)
-            if 'as_missing' == ivt and 'mean' == mis_val[col]:
-                prep.append(Imputer().fit(trn_d[col]))
-            prep.append(continuous_feature_transform(ftr_trf, col).fit(trn_d[col]))
-            dom = ContinuousDomain(invalid_value_treatment=ivt)
-            dom.fit(trn_d[col], name=col)
-            op_lst.append(dom)
-            op_lst.extend(prep)
-        else:
-            op_lst = None
+                op_lst = None
+        except Exception as e:
+            logger.error(e)
         c_map.append(([col], op_lst))
     return DataFrameMapper(c_map)
 

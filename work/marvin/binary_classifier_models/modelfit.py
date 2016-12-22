@@ -59,8 +59,8 @@ class BinaryClassifier(Enum):
         configspace = self.configspace(traindf, dfm)
         optimize_method = skopt_search(search_alg).search
         try:
-            return self.model.optimizeBestModel(traindf, testdf, dfm,
-                                            configspace, optimize_method, fig_dir, n_calls=n_calls)
+            return self.model.optimizeBestModel(traindf, testdf, dfm, configspace,
+                                                optimize_method, fig_dir, n_calls=n_calls)
         except Exception as e:
             logger.error("optimize {} with {} error: {}".format(self, search_alg, e))
             raise
@@ -423,14 +423,14 @@ def assess(
         Accumulated information about the experiment:
 
         {'Test accuracy': list of float,
-         'Cross-validation time (in secs.)':list of float,
+         'Cross-validation time':list of float,
          'Parameters sampled': list of int,
          'Method': search_func.__name__,
          'Model': model_class.__name__,
          'Dataset': dataset_name,
          'Best parameters': list of dict,
          'Mean test accuracy': float,
-         'Mean cross-validation time (in secs.)': float,
+         'Mean cross-validation time': float,
          'Mean parameters sampled': float}   
     """
     logger.info("assess: {}".format(test_metric))
@@ -454,7 +454,7 @@ def assess(
             param_grid,
             loss,
             **search_func_args)
-        data['Cross-validation time (in secs.)'].append(time() - start)
+        data['Cross-validation time'].append(time() - start)
         data['Parameters sampled'].append(len(results))
         best_params = sorted(results, key=itemgetter('loss'), reverse=False)
         best_params = best_params[0]['params']

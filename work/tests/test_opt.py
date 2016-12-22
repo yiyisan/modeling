@@ -10,11 +10,10 @@ import os
 
 
 def test_opt():
-    print(os.getcwd())
-    X_train = joblib.load("tests/X_train")
-    y_train = joblib.load("tests/y_train")
-    param_grid = joblib.load("tests/param_grid")
-    search_func_args = joblib.load("tests/search_func_args")
+    X_train = joblib.load("tests/fixtures/X_train")
+    y_train = joblib.load("tests/fixtures/y_train")
+    param_grid = joblib.load("tests/fixtures/param_grid")
+    search_func_args = joblib.load("tests/fixtures/search_func_args")
     results = skopt_search('GP').search(
     X_train,
     y_train,
