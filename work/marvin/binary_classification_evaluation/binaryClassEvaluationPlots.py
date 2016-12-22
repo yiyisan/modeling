@@ -244,7 +244,7 @@ def GBoddsWRTpredprob(Y_true, Y_predprob, groupCount=10):
 
     quant = []
     for i in range(1, groupCount + 1):
-        quant.append(test['predprob'].quantile(0.1 * i))
+        quant.append(test['predprob'].quantile(1.0 / groupCount * i))
     for i in range(1, groupCount + 1):
         if i == 1:
             pro_1 = quant[i - 1]
