@@ -66,7 +66,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
-    return alg, accuracy, auc, cv_score
+    return alg, accuracy, auc, cv_score, gsearch.grid_scores_
 
 
 # In[ ]:

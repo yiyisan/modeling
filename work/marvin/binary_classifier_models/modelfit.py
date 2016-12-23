@@ -166,7 +166,7 @@ class skopt_search(Enum):
 
         def skopt_scorer(param_vec):
             params = dict(zip(param_keys, param_vec))
-            logger.debug(params)
+
             err = cross_validated_scorer(
                 X_train, y_train, model_class, params, loss)
             return err
@@ -181,21 +181,6 @@ class skopt_search(Enum):
         except Exception as e:
             logger.error(e)
             raise
-        return results
-
-        def skopt_scorer(param_vec):
-            params = dict(zip(param_keys, param_vec))
-
-            err = cross_validated_scorer(
-                X_train, y_train, model_class, params, loss)
-            return err
-
-        outcome = self.method(skopt_scorer, list(param_vecs), n_calls=n_calls)
-        results = []
-        for err, param_vec in zip(outcome.func_vals, outcome.x_iters):
-            params = dict(zip(param_keys, param_vec))
-            results.append({'loss': err, 'params': params})
-        logger.debug("---------------  skopt_search end --------------")
         return results
 
 
@@ -241,7 +226,7 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     try:
         sns.plt.clf()
         sns.plt.figure(figsize=(8, 6))
-        sns.barplot(x=[col.decode("utf-8") for col in feature_importances.columns],
+        sns.barplot(x=[col for col in feature_importances.columns],
                     y=np.array(feature_importances)[0, :],
                     label='small')
         sns.plt.title('Feature Importances')
@@ -326,7 +311,6 @@ def run_experiments(
     # nested parallel jobs even if there is no actual
     # parallelization elsewhere in the experimental run.
     for search_func, param_grid, kwargs in experimental_run:
-        logger.info(search_func.__name__)
         all_results.append(
             assess(
                 X, y,
@@ -438,6 +422,7 @@ def assess(
             'Cross-validation time': [],
             'Parameters sampled': [],
             'Best parameters': [],
+            'Iteration details': [],
             'Method': search_func.__name__,
             'Model': model_class.__name__,
             'Dataset': dataset_name,
@@ -456,6 +441,7 @@ def assess(
             **search_func_args)
         data['Cross-validation time'].append(time() - start)
         data['Parameters sampled'].append(len(results))
+        data['Iteration details'].append(results)
         best_params = sorted(results, key=itemgetter('loss'), reverse=False)
         best_params = best_params[0]['params']
         data['Best parameters'].append(best_params)
@@ -468,6 +454,22 @@ def assess(
         data['Mean parameters sampled'] = np.mean(data['Parameters sampled'])
 
     return data
+
+
+# In[ ]:
+
+# <api>
+def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, train_alg, n_calls=100):
+    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
+
+    experiment_result = run_experiments(experiment_setting,
+                                        train, labels_train, train_alg)
+
+    test_accuracy = experiment_result[0]['Test accuracy']
+    max_index = test_accuracy.index(max(test_accuracy))
+    best_params = experiment_result[0]['Best parameters'][max_index]
+    trace = experiment_result[0]['Iteration details'][max_index]
+    return best_params, trace
 
 
 # In[24]:

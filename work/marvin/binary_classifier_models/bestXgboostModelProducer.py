@@ -85,10 +85,10 @@ def parameterGridInitialization(trainX):
 def configSpaceInitialization(trainX):      
     if trainX.shape[1] >= 10:
         skopt_grid = {'max_depth': (3, 9),
-                      'learning_rate': (0.01, 0.1), 
-                      'n_estimators': (50, 800), 
+                      'learning_rate': (0.01, 0.1),
+                      'n_estimators': (50, 800),
                       'objective': Categorical(('binary:logistic',)),
-                      'gamma': (0, 3), 
+                      'gamma': (0, 3),
                       'min_child_weight': (1, 5),
                       'subsample': (0.2, 0.9),
                       'colsample_bytree': (0.2, 0.9),
@@ -96,7 +96,7 @@ def configSpaceInitialization(trainX):
                       'scale_pos_weight': (1, 5)}
     else:
         skopt_grid = {'max_depth': (2, 3),
-                      'learning_rate': (0.01, 0.1), 
+                      'learning_rate': (0.01, 0.1),
                       'n_estimators': (20, 100), 
                       'objective': Categorical(('binary:logistic',)),
                       'gamma': (0, 3),
@@ -106,17 +106,6 @@ def configSpaceInitialization(trainX):
                       'reg_alpha': (1, 5),
                       'scale_pos_weight': (1, 5)}
     return skopt_grid
-
-
-# In[ ]:
-
-def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
-    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
-    experiment_result  = modelfit.run_experiments(experiment_setting, train, labels_train, XGBClassifier)
-    test_accuracy = experiment_result[0]['Test accuracy']
-    max_index = test_accuracy.index(max(test_accuracy))
-    best_params = experiment_result[0]['Best parameters'][max_index]
-    return best_params
 
 
 # In[1]:
@@ -302,7 +291,9 @@ def optimizeBestModel(traindf, testdf, datamapper,
     labels_test = test_array[:, -1]
 
     # running grid search to get the best parameter set 
-    best_params = searchBestParamsSkopt(train, labels_train, configspace, search_alg, n_calls)
+    best_params, trace = modelfit.searchBestParamsSkopt(train, labels_train,
+                                                        configspace, search_alg,
+                                                        XGBClassifier, n_calls)
     # train a gbm using the best parameter set
     xgboost_best = XGBClassifier(n_estimators=best_params['n_estimators'],
                                  learning_rate=best_params['learning_rate'],
@@ -325,5 +316,5 @@ def optimizeBestModel(traindf, testdf, datamapper,
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
 
-    return alg, accuracy, auc, cv_score
+    return alg, accuracy, auc, cv_score, trace
 

@@ -89,12 +89,12 @@ class FtrTransFunc(Enum):
         else:
             raise NotImplementedError
 
-    def apply(self, series, val=None):
+    def apply(self, series):
         after = self.method.fit_transform(series)
         if 'category' != series.dtype.name and contain_nan(after):
-            raise Exception(ftr + ' contains nan when transformed by ' + self)
+            raise Exception('feature contains nan when transformed by ' + self)
         if 'category' != series.dtype.name and contain_inf(after):
-            raise Exception(ftr + ' contains inf when transformed by ' + self)
+            raise Exception('feature contains inf when transformed by ' + self)
         return after
 
 
@@ -115,12 +115,12 @@ def drop_row(data, ftr):
     data.dropna(how='any', subset=[ftr], inplace=True)
 
 
-def contain_nan(series):                                  
+def contain_nan(series):             
     where = np.where(np.isnan(series))
     return 0 != len(where[0])
 
 
-def contain_inf(series):                                  
+def contain_inf(series):        
     where = np.where(np.isinf(series))
     return 0 != len(where[0])
 

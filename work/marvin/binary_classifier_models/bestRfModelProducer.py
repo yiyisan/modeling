@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV  # Perforing grid search
 
 import sklearn.metrics as metrics
+from skopt.space import Categorical
 import work.marvin.binary_classifier_models.modelfit as modelfit
 
 import logging
@@ -115,6 +116,7 @@ def configSpaceInitialization(trainX):
                       'min_samples_leaf': (20, train_size),
                       'min_samples_split': (20, train_size),
                       'n_estimators': (20, 200)}
+    skopt_grid['n_jobs'] = Categorical((-1,))
     return skopt_grid
 
 
@@ -122,17 +124,7 @@ def configSpaceInitialization(trainX):
 
 # In[ ]:
 
-# <api>
-def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
-    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
 
-    experiment_result = modelfit.run_experiments(experiment_setting,
-                                                 train, labels_train, RandomForestClassifier)
-
-    test_accuracy = experiment_result[0]['Test accuracy']
-    max_index = test_accuracy.index(max(test_accuracy))
-    best_params = experiment_result[0]['Best parameters'][max_index]
-    return best_params
 
 
 # In[ ]:
@@ -207,8 +199,9 @@ def optimizeBestModel(traindf, testdf, datamapper,
     labels_test = test_array[:, -1]
 
     # running grid search to get the best parameter set
-    best_params = searchBestParamsSkopt(train, labels_train,
-                                        configspace, search_alg, n_calls)
+    best_params, trace = modelfit.searchBestParamsSkopt(train, labels_train,
+                                                        configspace, search_alg,
+                                                        RandomForestClassifier, n_calls)
     # train a randomforest using the best parameter set
     rf_best = RandomForestClassifier(n_estimators=best_params['n_estimators'],
                                      min_samples_leaf=best_params['min_samples_leaf'],
@@ -225,5 +218,5 @@ def optimizeBestModel(traindf, testdf, datamapper,
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
 
-    return alg, accuracy, auc, cv_score
+    return alg, accuracy, auc, cv_score, trace
 

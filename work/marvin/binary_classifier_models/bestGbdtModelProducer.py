@@ -164,19 +164,6 @@ def configSpaceInitialization(trainX):
 
 # In[ ]:
 
-def searchBestParamsSkopt(train, labels_train, skopt_grid, search_alg, n_calls=100):
-    experiment_setting = [(search_alg, skopt_grid, {'n_calls': n_calls})]
-    experiment_result = modelfit.run_experiments(experiment_setting,
-                                                 train, labels_train,
-                                                 GradientBoostingClassifier)
-    test_accuracy = experiment_result[0]['Test accuracy']
-    max_index = test_accuracy.index(max(test_accuracy))
-    best_params = experiment_result[0]['Best parameters'][max_index]
-    return best_params
-
-
-# In[ ]:
-
 def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, seed=27):
     param_grid1, param_grid2 = param_grid
     return produceBestGBMmodel(traindf, testdf, datamapper,
@@ -234,7 +221,10 @@ def optimizeBestModel(traindf, testdf, datamapper,
 
     # running skopt.gbrt_search to get the best parameter set
     # search_alg: skopt_gbrt_search, skopt_gp_search, skopt_forest_search
-    best_params = searchBestParamsSkopt(train, labels_train, configspace, search_alg, n_calls)
+    best_params, trace = modelfit.searchBestParamsSkopt(train, labels_train,
+                                                        configspace, search_alg,
+                                                        GradientBoostingClassifier,
+                                                        n_calls)
 
     gbdt_best = GradientBoostingClassifier(learning_rate=best_params['learning_rate'],
                                            n_estimators=best_params['n_estimators'],
@@ -253,5 +243,5 @@ def optimizeBestModel(traindf, testdf, datamapper,
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
 
-    return alg, accuracy, auc, cv_score
+    return alg, accuracy, auc, cv_score, trace
 

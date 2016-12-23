@@ -48,9 +48,7 @@ def algEvaluateOnTestSet(alg, testdf, datamapper, ks_fig_path, sub_fig_path):
     plt.tight_layout()
     plt.savefig(sub_fig_path)
 
-    return (test_predprob, round(x_0,2),
-            round(prec(Y_true, Y_predprob, round(x_0, 2)), 2),
-            round(rec(Y_true, Y_predprob, round(x_0, 2)), 2))
+    return test_predprob, ks_val, ks_x, p, r
 
 
 # In[3]:
@@ -219,7 +217,9 @@ def ks_curve(Y_true, Y_predprob, fig_path):
     plt.title('Kolmogorov - Smirnov Chart')
     plt.savefig(fig_path)
 
-    return d, x_0, prec(Y_true, Y_predprob, x_0), rec(Y_true, Y_predprob, x_0)
+    return (d, round(x_0, 2),
+            round(prec(Y_true, Y_predprob, round(x_0, 2)), 2),
+            round(rec(Y_true, Y_predprob, round(x_0, 2)), 2))
 
 
 def confusionMatrixs(Y_true, Y_predprob, cut_off):
@@ -248,63 +248,27 @@ def GBoddsWRTpredprob(Y_true, Y_predprob, groupCount=10):
     good = []
     bad = []
     oddsRatio = []
-
-    if groupCount == 10:
-        quant = []
-        for i in range(1, 11, 1):
-            quant.append(test['predprob'].quantile(0.1 * i))
-        for i in range(1, 11, 1):
-            if i == 1:
-                pro_1 = quant[i - 1]
-                df = test[test.predprob <= pro_1]
-                gcount = df[df.label == 0].shape[0]
-                bcount = df[df.label == 1].shape[0]
-                good.append(gcount)
-                bad.append(bcount)
-                oddsRatio.append(dividZeroProcess(gcount, bcount))
-            else:
-                pro_0 = quant[i - 2]
-                pro_1 = quant[i - 1]
-                df1 = test[test.predprob > pro_0]
-                df = df1[df1.predprob <= pro_1]
-                gcount = df[df.label == 0].shape[0]
-                bcount = df[df.label == 1].shape[0]
-                good.append(gcount)
-                bad.append(bcount)
-                oddsRatio.append(dividZeroProcess(gcount, bcount))
-        oddsDF = pd.DataFrame({'proQuantile': ['10%', '20%', '30%', '40%', '50%',
-                                               '60%', '70%', '80%', '90%', '100%'],
-                               'Prob_1': quant,
-                               'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
-    else:
-        quant = []
-        for i in range(1, 21, 1):
-            quant.append(test['predprob'].quantile(0.05 * i))
-        for i in range(1, 21, 1):
-            if i == 1:
-                pro_1 = quant[i-1]
-                df = test[test.predprob <= pro_1]
-                gcount = df[df.label == 0].shape[0]
-                bcount = df[df.label == 1].shape[0]
-                good.append(gcount)
-                bad.append(bcount)
-                oddsRatio.append(dividZeroProcess(gcount, bcount))
-            else:
-                pro_0 = quant[i - 2]
-                pro_1 = quant[i - 1]
-                df1 = test[test.predprob > pro_0]
-                df = df1[df1.predprob <= pro_1]
-                gcount = df[df.label == 0].shape[0]
-                bcount = df[df.label == 1].shape[0]
-                good.append(gcount)
-                bad.append(bcount)
-                oddsRatio.append(dividZeroProcess(gcount, bcount))
-        oddsDF = pd.DataFrame({'proQuantile': ['5%', '10%', '15%', '20%', '25%',
-                                               '30%', '35%', '40%', '45%', '50%',
-                                               '55%', '60%', '65%', '70%', '75%',
-                                               '80%', '85%', '90%', '95%', '100%'],
-                               'Prob_1': quant,
-                               'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
-    oddsDF = oddsDF[['proQuantile', 'Prob_1', 'good_count', 'bad_count', 'odds']]
-    return oddsDF
+    if groupCount != 10 and groupCount != 20:
+        groupCount = 10
+    quant = []
+    for i in range(1, groupCount + 1):
+        quant.append(test['predprob'].quantile(1. / groupCount * i))
+    for i in range(1, groupCount + 1):
+        if i == 1:
+            pro_1 = quant[i - 1]
+            df = test[test.predprob <= pro_1]
+        else:
+            pro_0 = quant[i - 2]
+            pro_1 = quant[i - 1]
+            df1 = test[test.predprob > pro_0]
+            df = df1[df1.predprob <= pro_1]
+        gcount = df[df.label == 0].shape[0]
+        bcount = df[df.label == 1].shape[0]           
+        good.append(gcount)
+        bad.append(bcount)
+        oddsRatio.append(dividZeroProcess(gcount, bcount))
+    oddsDF = pd.DataFrame({'proQuantile': gen_pro_quantile(groupCount),
+                           'Prob_1': quant,
+                           'good_count': good, 'bad_count': bad, 'odds': oddsRatio})
+    return oddsDF[['proQuantile', 'Prob_1', 'good_count', 'bad_count', 'odds']]
 
