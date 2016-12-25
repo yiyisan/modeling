@@ -263,7 +263,7 @@ def GBoddsWRTpredprob(Y_true, Y_predprob, groupCount=10):
             df1 = test[test.predprob > pro_0]
             df = df1[df1.predprob <= pro_1]
         gcount = df[df.label == 0].shape[0]
-        bcount = df[df.label == 1].shape[0]           
+        bcount = df[df.label == 1].shape[0]     
         good.append(gcount)
         bad.append(bcount)
         oddsRatio.append(dividZeroProcess(gcount, bcount))

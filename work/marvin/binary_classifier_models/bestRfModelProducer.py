@@ -51,7 +51,7 @@ def initializationGridSearch(df, datamapper):
     return traindf, testdf, param_grid1, param_grid2
 
 
-# ## Parameters Initialization 
+# ## Parameters Initialization
 
 # In[ ]:
 
@@ -121,11 +121,6 @@ def configSpaceInitialization(trainX):
 
 
 # ## Best RF Model Producer
-
-# In[ ]:
-
-
-
 
 # In[ ]:
 

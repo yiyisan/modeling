@@ -80,8 +80,9 @@ def simulate_compare_pmml(data, model, target, test_predprob, url="http://opensc
     batchtest = data.to_dict()
     batchbody = [{"id": int(idx),
                   "arguments": {k: batchtest[k][idx].astype(object)
-                                if type(batchtest[k][idx]).__module__ == 'numpy' else batchtest[k][idx]
-                                for k in batchtest.keys() if  k != target},
+                                if type(batchtest[k][idx]).__module__ == 'numpy'
+                                else batchtest[k][idx]
+                                for k in batchtest.keys() if k != target},
                   "target": batchtest[target][idx]}
                  for idx in batchtest[target].keys()]
     prob_pmml = {}
@@ -110,7 +111,9 @@ def undeploy_model(model_id, url="http://openscoring:8080"):
 
 # <api>
 def probability_statistics(prob_pmml, prob_alg, data):
-    
+    """
+    using probability_statistics to compare pmml with python model
+    """
     prob_pmml_approx = {key: round(prob_pmml[key], 4) for key in prob_pmml}
     prob_alg_approx = {key: round(prob_alg[key], 4) for key in prob_alg}
 

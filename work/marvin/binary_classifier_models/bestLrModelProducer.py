@@ -53,6 +53,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
                            param_grid=param_grid,
                            scoring='roc_auc', n_jobs=-1, iid=False, cv=5)
     gsearch.fit(train, labels_train)
+    trace = [{"params": grid[0], "loss": grid[1]} for grid in gsearch.grid_scores_]
     best_parameters = gsearch.best_estimator_.get_params()
     best_penalty = best_parameters['penalty']
     logger.debug("best parameters:{}".format(best_parameters))
@@ -66,7 +67,7 @@ def produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path=None, s
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
     cv_score = [np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)]
-    return alg, accuracy, auc, cv_score, gsearch.grid_scores_
+    return alg, accuracy, auc, cv_score, trace
 
 
 # In[ ]:
@@ -77,6 +78,8 @@ def produceBestModel(traindf, testdf, datamapper, param_grid, fig_path=None, see
 
 # In[ ]:
 
-def optimizeBestModel(traindf, testdf, datamapper, param_grid, search_alg=None, fig_path=None, seed=27):
-    return produceBestLRmodel(traindf, testdf, datamapper, param_grid, fig_path, seed)
+def optimizeBestModel(traindf, testdf, datamapper, param_grid,
+                      search_alg=None, fig_path=None, n_calls=None, seed=27):
+    return produceBestLRmodel(traindf, testdf, datamapper, param_grid,
+                              fig_path=fig_path, seed=seed)
 

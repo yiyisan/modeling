@@ -59,7 +59,7 @@ def produceBestGBMmodel(traindf, testdf, datamapper,
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
 
-    # running grid search to get the best parameter set  
+    # running grid search to get the best parameter set
     (best_subsample, best_estimators, best_learning_rate, best_max_depth,
      best_max_feature, best_min_samples_split) = gbmGridSearch(train,
                                                                labels_train,
@@ -77,9 +77,9 @@ def produceBestGBMmodel(traindf, testdf, datamapper,
 
     (alg, train_predictions,
      train_predprob, cv_score) = modelfit.modelfit(gbm_best, datamapper,
-                                                  train, labels_train,
-                                                  test, labels_test,
-                                                  fig_path=fig_path)
+                                                   train, labels_train,
+                                                   test, labels_test,
+                                                   fig_path=fig_path)
 
     accuracy = metrics.accuracy_score(labels_train, train_predictions)
     auc = metrics.roc_auc_score(labels_train, train_predprob)
@@ -108,7 +108,7 @@ def max_feature_space(feature_size):
     if fs_sqrt > 10:
         max_feature = range(int(fs_sqrt - 3), int(fs_sqrt * 1.50), 2)
     else:
-        max_feature = range(int(fs_sqrt), int(fs_sqrt * 1.50), 2)    
+        max_feature = range(int(fs_sqrt), int(fs_sqrt * 1.50), 2)
     return list(max_feature)
 
 
@@ -154,7 +154,7 @@ def configSpaceInitialization(trainX):
                       'subsample': (0.2, 0.9)}
     else:
         skopt_grid = {'max_features': (2, feature_size),
-                      'max_depth': (2, 9),       
+                      'max_depth': (2, 9),
                       'learning_rate': (0.01, 0.2),
                       'min_samples_split': (20, train_size),
                       'n_estimators': (50, 800),

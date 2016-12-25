@@ -12,6 +12,7 @@ from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler, StandardScaler
 from sklearn.preprocessing import FunctionTransformer
 
 import base64
+from six import string_types
 from enum import Enum
 import numpy as np
 import pandas as pd
@@ -31,13 +32,97 @@ class DataMapperError(Exception):
     pass
 
 
+# In[ ]:
+
+def ivt_missing(mis_val, col):
+    if col not in mis_val:
+        return 'as_is'
+    if isinstance(mis_val[col], tuple) and 'mean' != mis_val[col][0]:
+        return 'as_missing'
+    elif 'drop row'.lower() == mis_val[col]:
+        return 'return_invalid'
+    else:
+        raise Exception("""Invalid missing treatment
+        of feature: {}""".format(col))
+
+
+def onehot_encoder_with_missing(trn_series):
+    unary = (trn_series.unique()[0] == 1)
+    binary_with_na = is_binary(trn_series) and 'CreditX-NA' in set(trn_series)
+    if unary or binary_with_na:
+        return LabelEncoder()
+    else:
+        return LabelBinarizer()
+
+
+def continuous_feature_transform(ftr_trf, col):
+    prep = None
+    if col in ftr_trf:
+        if isinstance(ftr_trf[col], string_types):
+            prep = FtrTransFunc(ftr_trf[col]).method
+        else:
+            prep = ftr_trf[col].method
+    return prep
+
+
 # In[3]:
 
 class MisValFunc(Enum):
     AS_NEW_CLASS = 'as new class'
     DROP_ROW = 'drop row'
+    MODE = 'mode'
     MEAN = 'mean'
     DEFAULT = 'default'
+
+    def CategoricalTransform(self,
+                             missing_value_replacement=None,
+                             invalid_default='CreditX-NA',
+                             invalid_value_treatment='as_missing'):
+        if (self is MisValFunc.DEFAULT or self is MisValFunc.AS_NEW_CLASS):
+            if missing_value_replacement is not None:
+                missing_value_treatment = 'asValue'
+            else:
+                missing_value_replacement = invalid_default
+        elif self is MisValFunc.MEAN or self is MisValFunc.DROP_ROW:
+            missing_value_treatment = 'asMode'
+        else:
+            raise NotImplementedError
+        return CategoricalDomain(invalid_value_treatment=invalid_value_treatment,
+                                 invalid_default=invalid_default,
+                                 missing_value_treatment=missing_value_treatment,
+                                 missing_value_replacement=missing_value_replacement)
+
+    def ContinuousTransform(self,
+                            missing_value_replacement=None,
+                            invalid_value_treatment='as_missing'):
+        if self is MisValFunc.DEFAULT:
+            missing_value_treatment = 'asValue'
+        elif self is MisValFunc.DROP_ROW:
+            missing_value_treatment = 'asMedian'
+        elif self is MisValFunc.MEAN:
+            missing_value_treatment = 'asMean'
+        else:
+            raise NotImplementedError
+        return ContinuousDomain(invalid_value_treatment=invalid_value_treatment,
+                                missing_value_treatment=missing_value_treatment,
+                                missing_value_replacement=missing_value_replacement)
+
+    def EncoderTransform(self, series):
+        if self is MisValFunc.DEFAULT:
+            encoder = onehot_encoder_with_missing(series)
+        else:
+            encoder = LabelEncoder() if is_binary(series) else LabelBinarizer()
+        return encoder
+
+    def ImputerTransform(self, series):
+        if self is MisValFunc.DROP_ROW:
+            return Imputer(strategy='median')
+        elif self is MisValFunc.MODE:
+            return Imputer(strategy='most_frequent')
+        elif self is MisValFunc.MEAN:
+            return Imputer(strategy='most_frequent')
+        else:
+            return None
 
     def apply(self, ftr, data, val=None):
         if self is MisValFunc.DEFAULT:
@@ -77,15 +162,21 @@ class FtrTransFunc(Enum):
         elif self is FtrTransFunc.MAX_ABS_SCALER:
             return MaxAbsScaler(copy=False)
         elif self is FtrTransFunc.NORMALIZER:
-            return FunctionTransformer(Normalizer(axis=0), False)
+            ft = FunctionTransformer(Normalizer(axis=0), False)
+            ft.name = self.name
+            return ft
         elif self is FtrTransFunc.BINARIZER:
             return LabelBinarizer(copy=False)
         elif self is FtrTransFunc.ONE_HOT_ENCODER:
             return OneHotEncoder()
         elif self is FtrTransFunc.NUMPY_LOG1P:
-            return FunctionTransformer(np.log1p, False)
+            ft = FunctionTransformer(np.log1p, False)
+            ft.name = self.name
+            return ft
         elif self is FtrTransFunc.NUMPY_LOG:
-            return FunctionTransformer(np.log, False)
+            ft = FunctionTransformer(np.log, False)
+            ft.name = self.name
+            return ft
         else:
             raise NotImplementedError
 
@@ -115,12 +206,12 @@ def drop_row(data, ftr):
     data.dropna(how='any', subset=[ftr], inplace=True)
 
 
-def contain_nan(series):             
+def contain_nan(series):
     where = np.where(np.isnan(series))
     return 0 != len(where[0])
 
 
-def contain_inf(series):        
+def contain_inf(series):
     where = np.where(np.isinf(series))
     return 0 != len(where[0])
 
@@ -218,40 +309,6 @@ def is_binary(ftr_vlst):
     return 2 == len(uniq_sp)
 
 
-def missing_ivt(mis_val, col):
-    if col not in mis_val:
-        return 'as_is'
-    if isinstance(mis_val[col], tuple) and 'mean' != mis_val[col][0]:
-        return 'as_missing'
-    elif 'drop row'.lower() == mis_val[col]:
-        return 'return_invalid'
-    else:
-        raise Exception("""Invalid missing treatment
-        of feature: {}""".format(col))
-
-
-def onehot_encoder_with_missing(trn_series):
-    unary = (trn_series.unique()[0] == 1)
-    binary_with_na = is_binary(trn_series) and 'CreditX-NA' in set(trn_series)
-    if unary or binary_with_na:
-        return LabelEncoder()
-    else:
-        return LabelBinarizer()
-
-
-def continuous_feature_transform(ftr_trf, col):
-    prep = None
-    if col in ftr_trf:
-        if 'norm' == ftr_trf[col]:
-            prep = MinMaxScaler(copy=False)
-        elif 'log' == ftr_trf[col]:
-            prep = FunctionTransformer(np.log)
-        elif 'log1p' == ftr_trf[col]:
-            prep = FunctionTransformer(np.log1p, kw_args=None)
-        prep.name = ftr_trf[col]
-    return prep
-
-
 # In[13]:
 
 # <api>
@@ -273,37 +330,27 @@ def dataMapperBuilder(trn_d, categ_ftr, conti_ftr, invalid_ftr=None, mis_val=Non
         op_lst = []
         try:
             if col in categ_ftr:
-                ivt = missing_ivt(mis_val, col)
-                if 'as_missing' == ivt:
-                    encoder = onehot_encoder_with_missing(trn_d[col])
-                    prep.append(encoder.fit(trn_d[col]))
-                    missing_value_treatment = mis_val.get(col, ('asMode', None))[0]
-                    missing_value_replacement = mis_val.get(col, (None, None))[1]
-                    dom = CategoricalDomain(invalid_value_treatment=ivt,
-                                            invalid_default='CreditX-NA',
-                                            missing_value_treatment=missing_value_treatment,
-                                            missing_value_replacement=missing_value_replacement)
-                else:
-                    encoder = LabelEncoder() if is_binary(trn_d[col]) else LabelBinarizer()
-                    prep.append(encoder.fit(trn_d[col]))
-                    dom = CategoricalDomain(invalid_value_treatment=ivt)
-                dom.fit(trn_d[col], name=col)
-                op_lst.append(dom)
+                mis, val = mis_val.get(col, ('mean', None))
+                misValFunc = MisValFunc(mis)
+                mis_trans = misValFunc.EncoderTransform(trn_d[col])
+                if mis_trans:
+                    prep.append(mis_trans.fit(trn_d[col]))
+                dom = misValFunc.CategoricalTransform(missing_value_replacement=val)
+                op_lst.append(dom.fit(trn_d[col], name=col))
                 op_lst.extend(prep)
             elif col in invalid_ftr:
                 dom = OrdinalDomain(field_usage_treatment="supplementary")
                 dom.fit(trn_d[col], name=col)
                 op_lst.append(dom)
             elif col in conti_ftr:
-                ivt = missing_ivt(mis_val, col)
-                if 'as_missing' == ivt and 'mean' == mis_val[col]:
-                    prep.append(Imputer().fit(trn_d[col]))
+                mis, val = mis_val.get(col, ('mean', None))
+                misValFunc = MisValFunc(mis)
+                # TODO: fix imputer impatible bug
                 ftr_trans = continuous_feature_transform(ftr_trf, col)
                 if ftr_trans:
                     prep.append(ftr_trans.fit(trn_d[col]))
-                dom = ContinuousDomain(invalid_value_treatment=ivt)
-                dom.fit(trn_d[col], name=col)
-                op_lst.append(dom)
+                dom = misValFunc.ContinuousTransform(missing_value_replacement=val)
+                op_lst.append(dom.fit(trn_d[col], name=col))
                 op_lst.extend(prep)
             else:
                 op_lst = None

@@ -15,10 +15,10 @@ def test_opt():
     param_grid = joblib.load("tests/fixtures/param_grid")
     search_func_args = joblib.load("tests/fixtures/search_func_args")
     results = skopt_search('GP').search(
-    X_train,
-    y_train,
-    RandomForestClassifier,
-    param_grid,
-    'neg_log_loss',
-    **search_func_args)
+        X_train,
+        y_train,
+        RandomForestClassifier,
+        param_grid,
+        'neg_log_loss',
+        **search_func_args)
 

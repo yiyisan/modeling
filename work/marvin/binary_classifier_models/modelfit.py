@@ -57,7 +57,7 @@ class BinaryClassifier(Enum):
 
     def optimizeBestModel(self, traindf, testdf, dfm, fig_dir, search_alg='GP', n_calls=100):
         configspace = self.configspace(traindf, dfm)
-        optimize_method = skopt_search(search_alg).search
+        optimize_method = HyperOpt(search_alg).search
         try:
             return self.model.optimizeBestModel(traindf, testdf, dfm, configspace,
                                                 optimize_method, fig_dir, n_calls=n_calls)
@@ -86,20 +86,20 @@ class BinaryClassifier(Enum):
 # In[14]:
 
 # <api>
-class skopt_search(Enum):
+class HyperOpt(Enum):
     gp = "GP"
     rf = "RF"
     gbrt = "GBRT"
 
     @property
     def method(self):
-        if self is skopt_search.gp:
+        if self is HyperOpt.gp:
             from skopt import gp_minimize
             return gp_minimize
-        elif self is skopt_search.rf:
+        elif self is HyperOpt.rf:
             from skopt import forest_minimize
             return forest_minimize
-        elif self is skopt_search.gbrt:
+        elif self is HyperOpt.gbrt:
             from skopt import gbrt_minimize
             return gbrt_minimize
 
@@ -153,20 +153,20 @@ class skopt_search(Enum):
                 'min_child_weight': (1, 5),
                 'subsample': (0.1, 1),
                 'colsample_bytree': (0.1, 1)}
-        >>> res = skopt_search('RF').search(X, y, XGBClassifier, skopt_grid, LOG_LOSS, n_calls=10)
+        >>> res = HyperOpt('RF').search(X, y, XGBClassifier, skopt_grid, LOG_LOSS, n_calls=10)
 
         To be followed by (see below):
 
         >>> best_params, best_loss = best_results(res)
         """
-        logger.debug("---------------  skopt_search start --------------")
+        logger.debug("---------------  HyperOpt start --------------")
         param_keys, param_vecs = zip(*param_grid.items())
         param_keys = list(param_keys)
         param_vecs = list(param_vecs)
 
         def skopt_scorer(param_vec):
             params = dict(zip(param_keys, param_vec))
-
+            logger.info(params)
             err = cross_validated_scorer(
                 X_train, y_train, model_class, params, loss)
             return err
@@ -177,7 +177,7 @@ class skopt_search(Enum):
             for err, param_vec in zip(outcome.func_vals, outcome.x_iters):
                 params = dict(zip(param_keys, param_vec))
                 results.append({'loss': err, 'params': params})
-            logger.debug("---------------  skopt_search end --------------")
+            logger.debug("---------------  HyperOpt end --------------")
         except Exception as e:
             logger.error(e)
             raise
@@ -208,7 +208,8 @@ def modelfit(alg, datamapper, train, labels_train, test, labels_test,
     train_predprob = alg.predict_proba(train)[:, 1]
 
     cv_score = cross_validation.cross_val_score(alg, train, labels_train,
-                                                cv=cv_folds, n_jobs=cv_folds, scoring='roc_auc')
+                                                cv=cv_folds, n_jobs=1,
+                                                scoring='roc_auc')
 
     feature_list = [mapper.data_ for (name, mapper) in datamapper.features if mapper]
     feature_indices = [feature for sublist in feature_list for feature in sublist]
@@ -409,19 +410,19 @@ def assess(
         {'Test accuracy': list of float,
          'Cross-validation time':list of float,
          'Parameters sampled': list of int,
+         'Iteration details': list of list,
          'Method': search_func.__name__,
          'Model': model_class.__name__,
          'Dataset': dataset_name,
          'Best parameters': list of dict,
          'Mean test accuracy': float,
          'Mean cross-validation time': float,
-         'Mean parameters sampled': float}   
+         'Mean parameters sampled': float}
     """
     logger.info("assess: {}".format(test_metric))
     data = {'Test accuracy': [],
             'Cross-validation time': [],
             'Parameters sampled': [],
-            'Best parameters': [],
             'Iteration details': [],
             'Method': search_func.__name__,
             'Model': model_class.__name__,

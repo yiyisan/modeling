@@ -36,8 +36,8 @@ def bestModelProducer(data, target, datamapper, figpath):
     # estimate optimal parameters grid space
     configspace = parameterGridInitialization(train)
     alg, accuracy, auc, cv_score = produceBestXgboostModel(traindf, testdf,
-                                                     datamapper, configspace,
-                                                     figpath)
+                                                           datamapper, configspace,
+                                                           figpath)
     return alg, traindf, testdf, accuracy, auc, cv_score
 
 
@@ -82,7 +82,7 @@ def parameterGridInitialization(trainX):
 # In[ ]:
 
 # <api>
-def configSpaceInitialization(trainX):      
+def configSpaceInitialization(trainX):
     if trainX.shape[1] >= 10:
         skopt_grid = {'max_depth': (3, 9),
                       'learning_rate': (0.01, 0.1),
@@ -97,7 +97,7 @@ def configSpaceInitialization(trainX):
     else:
         skopt_grid = {'max_depth': (2, 3),
                       'learning_rate': (0.01, 0.1),
-                      'n_estimators': (20, 100), 
+                      'n_estimators': (20, 100),
                       'objective': Categorical(('binary:logistic',)),
                       'gamma': (0, 3),
                       'min_child_weight': (1, 5),
@@ -122,11 +122,11 @@ def produceBestXgboostModel(traindf, testdf, datamapper,
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
 
-    # running grid search to get the best parameter set 
+    # running grid search to get the best parameter set
     (best_subsample, best_estimators, best_learning_rate, best_max_depth,
-    best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha) =\
-    xgboostGridSearch(train, labels_train,
-                      param_grid1, param_grid2, param_grid3, param_grid4)
+     best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha) =\
+        xgboostGridSearch(train, labels_train,
+                          param_grid1, param_grid2, param_grid3, param_grid4)
 
     # train a gbm using the best parameter set
     xgboost_best = XGBClassifier(n_estimators=best_estimators, learning_rate=best_learning_rate,
@@ -234,7 +234,7 @@ def xgboostGridSearch(train, labels_train,
     best_parameters = gsearch2.best_estimator_.get_params()
     best_gamma = best_parameters["gamma"]
     best_reg_alpha = best_parameters["reg_alpha"]
-   
+
     estimator3 = XGBClassifier(n_estimators=best_estimators,
                                max_depth=best_max_depth,
                                min_child_weight=best_min_child_weight,
@@ -264,7 +264,7 @@ def xgboostGridSearch(train, labels_train,
     best_estimators = xgBoostTrainBestn_estimators(estimator, train, labels_train)
 
     return (best_subsample, best_estimators, best_learning_rate, best_max_depth,
-        best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha)
+            best_min_child_weight, best_colsample_bytree, best_gamma, best_reg_alpha)
 
 
 # In[ ]:
@@ -290,7 +290,7 @@ def optimizeBestModel(traindf, testdf, datamapper,
     test = test_array[:, :-1]
     labels_test = test_array[:, -1]
 
-    # running grid search to get the best parameter set 
+    # running grid search to get the best parameter set
     best_params, trace = modelfit.searchBestParamsSkopt(train, labels_train,
                                                         configspace, search_alg,
                                                         XGBClassifier, n_calls)
