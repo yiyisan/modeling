@@ -1,17 +1,21 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM registry.creditx.com:5000/scipy-notebook
+FROM newreg.creditx.com/marvin/scipy-notebook
 
 USER root
-RUN sed -i "s/httpredir\.debian\.org/mirrors4\.tuna\.tsinghua\.edu\.cn/g" /etc/apt/sources.list
+RUN echo "deb http://httpredir.debian.org/debian jessie-backports main" >> /etc/apt/sources.list
+RUN sed -i "s/httpredir\.debian\.org/mirrors\.ustc\.edu\.cn/g" /etc/apt/sources.list
 
+RUN echo "channels:\n\
+  - http://newreg.creditx.com:10443/pkgs/creditx\n\
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free" > ~/.condarc
 
-RUN apt-get update && apt-get install -y openjdk-7-jdk tree vim && \
+RUN apt-get update && apt-get install -y  -t jessie-backports ca-certificates-java openjdk-8-jre-headless openjdk-8-jdk-headless openjdk-8-jre openjdk-8-jdk tree vim && \
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 
-RUN conda install --yes pytest scikit-optimize 
-RUN bash -c "source activate python2 && \
-     conda install pytest scikit-optimize && \
-          . deactivate"
+USER $NB_USER
+COPY .jupyter/jupyter_notebook_config.py /home/$NB_USER/.jupyter
+RUN conda install --force --yes jupyter_nbextensions_configurator
+RUN conda install --force --yes sklearn-pandas sklearn2pmml

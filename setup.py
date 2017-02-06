@@ -1,12 +1,15 @@
 from setuptools import setup, find_packages
+from Cython.Build import cythonize
 
-PACKAGE = "work"
-NAME = "work"
+from distutils import sysconfig
+
+PACKAGE = "marvin_modeling"
+NAME = "marvin_modeling"
 DESCRIPTION = "rich help module for marvin modelling"
 AUTHOR = "CreditX"
 AUTHOR_EMAIL = "marvin@creditx.com"
 URL = "https://git.creditx.com/marvin/marvin_modeling"
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 setup(
     name=NAME,
@@ -16,7 +19,7 @@ setup(
     author_email=AUTHOR_EMAIL,
     license="BSD",
     url=URL,
-    include_package_data = True,
+    include_package_data=True,
     packages=['work', 'work/marvin'],
     classifiers=[
         'License :: OSI Approved :: Private License',
