@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM newreg.creditx.com/marvin/scipy-notebook
+FROM newreg.creditx.com/marvin/scipy-notebook:v2
 
 USER root
 RUN echo "deb http://httpredir.debian.org/debian jessie-backports main" >> /etc/apt/sources.list
@@ -17,5 +17,14 @@ RUN apt-get update && apt-get install -y  -t jessie-backports ca-certificates-ja
 
 USER $NB_USER
 COPY .jupyter/jupyter_notebook_config.py /home/$NB_USER/.jupyter
+
+RUN mkdir -p ~/.ipython/profile_default/startup
+RUN echo "from doit.tools import register_doit_as_IPython_magic\n\
+register_doit_as_IPython_magic()\n\
+%load_ext sql\n\
+%load_ext jupyter_cms\n" >  ~/.ipython/profile_default/startup/startup_magic.ipy
+
 RUN conda install --force --yes jupyter_nbextensions_configurator
 RUN conda install --force --yes sklearn-pandas sklearn2pmml
+RUN conda install --force --yes lightgbm
+RUN bash -c 'source activate python2 && conda install --force --yes sklearn-pandas sklearn2pmml lightgbm'

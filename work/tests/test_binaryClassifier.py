@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, skopt_search
+from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, HyperOpt
 import work.marvin.binary_classifier_models
 from sklearn.datasets import make_classification
 from skopt.space import Categorical
@@ -23,4 +23,4 @@ def testOptimizeModel():
                   'min_samples_leaf': (50, 500),
                   'min_samples_split': (50, 500),
                   'n_estimators': (50, 800)}
-    res = skopt_search('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
+    res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
