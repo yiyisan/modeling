@@ -8,3 +8,6 @@ __pycache__
 .ipython/profile_default/history.sqlite
 dist
 work.egg-info
+work/marvin/binary_classifier_models/*.py
+work/marvin/binary_classification_evaluation/*.py
+work/marvin/dataPrepareforTraining/*.py

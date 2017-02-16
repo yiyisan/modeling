@@ -18,7 +18,7 @@ clean:
 
 build: 
 	find . -name ".ipynb_checkpoints" | xargs rm -rf
-	for var in $$(find work -name "*.ipynb" -not -path ".ipynb_checkpoints/*") ; \
+	for var in $$(find work/marvin -name "*.ipynb" -not -path ".ipynb_checkpoints/*") ; \
 	do \
 			name=`echo $$var | cut -d'.' -f1`; \
 			if [ ! -d "$$name" ]; then \
