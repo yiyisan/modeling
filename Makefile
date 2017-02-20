@@ -43,5 +43,5 @@ install: build package
 run: clean
 	-docker kill marvin_modeling
 	-docker rm marvin_modeling
-	docker run -it -d --name marvin_modeling -e PASSWORD=debug -p 28888:8888 \
+	docker run -it -d --name marvin_modeling --shm-size 2g -e PASSWORD=debug -p 28888:8888 \
 		-v `pwd`:/home/creditx newreg.creditx.com/marvin/marvin_modeling:devel
