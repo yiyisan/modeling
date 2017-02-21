@@ -13,6 +13,6 @@ def test_combine():
     a = u'你'
     b = 'adsad'
     c = 1
-    assert combine(a) != None
-    assert combine(b) != None
-    assert combine(c) != None
+    assert combine(a) is not None
+    assert combine(b) is not None
+    assert combine(c) is not None
