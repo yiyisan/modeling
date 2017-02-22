@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
+import sys
+sys.path.append("../../")
 from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, HyperOpt
 import work.marvin.binary_classifier_models
 from sklearn.datasets import make_classification
@@ -16,6 +18,8 @@ def testBinaryClassifier():
     assert lr.model is work.marvin.binary_classifier_models.bestLrModelProducer
     gbm = BinaryClassifier("GBM")
     assert gbm.model is work.marvin.binary_classifier_models.bestGbdtModelProducer
+    lgb = BinaryClassifier("LightGBM")
+    assert lgb.model is work.marvin.binary_classifier_models.bestLightgbmModelProducer
 
 def testOptimizeModel():
     X, y = make_classification(n_samples=100, n_features=20, n_informative=2)
@@ -24,3 +28,5 @@ def testOptimizeModel():
                   'min_samples_split': (50, 500),
                   'n_estimators': (50, 800)}
     res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
+
+

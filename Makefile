@@ -7,8 +7,8 @@ package:
 	python setup.py sdist
 	rm /opt/anaconda/conda-bld/src_cache/work*.tar.gz -rf
 	conda build purge
-	conda build --python 2.7 recipe
 	conda build --python 3.5 recipe
+	conda build --python 2.7 recipe
 
 clean:
 	rm -rf work.egg-info
