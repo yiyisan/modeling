@@ -2,7 +2,10 @@
 # encoding: utf-8
 import sys
 sys.path.append("../../")
+<<<<<<< HEAD
 
+=======
+>>>>>>> 608859a050f4c8a6c415d0e52feafda27cbe495e
 from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, HyperOpt
 import work.marvin.binary_classifier_models
 from sklearn.datasets import make_classification
@@ -30,10 +33,14 @@ def testOptimizeModel():
                   'min_samples_leaf': (50, 500),
                   'min_samples_split': (50, 500),
                   'n_estimators': (50, 800)}
+<<<<<<< HEAD
     for mod in ["RF", "GBRT", "GP"]:       
         res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
         assert len(res) == 10
 
 
+=======
+    res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
+>>>>>>> 608859a050f4c8a6c415d0e52feafda27cbe495e
 
 
