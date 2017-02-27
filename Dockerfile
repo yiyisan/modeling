@@ -26,5 +26,5 @@ register_doit_as_IPython_magic()\n\
 
 RUN conda install --force --yes jupyter_nbextensions_configurator
 RUN conda install --force --yes lightgbm
-RUN conda install --force --yes sklearn-pandas=1.3.3 sklearn2pmml=0.18.2
+RUN conda install --force --yes sklearn-pandas=1.3.3 sklearn2pmml=0.18.3
 RUN bash -c 'source activate python2 && conda install --force --yes sklearn-pandas sklearn2pmml lightgbm'

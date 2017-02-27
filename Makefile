@@ -12,6 +12,7 @@ package:
 
 clean:
 	rm -rf work.egg-info
+	-find work -name ".ipynb" -exec nbstripout {} \;
 	-find work -name "__pycache__" -exec rm -rf {} \;
 	-find work -name "*.pyc" -exec rm {} \;
 	-find work/marvin -name "*.py"  -not -name "__init__.py" -exec rm {} \;
