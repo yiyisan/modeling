@@ -18,7 +18,7 @@ clean:
 	-find work/marvin -name "*.py"  -not -name "__init__.py" -exec rm {} \;
 
 build: 
-	find . -name ".ipynb_checkpoints" | xargs rm -rf
+	-find . -name ".ipynb_checkpoints" | xargs rm -rf
 	for var in $$(find work/marvin -name "*.ipynb" -not -path ".ipynb_checkpoints/*") ; \
 	do \
 			name=`echo $$var | cut -d'.' -f1`; \
