@@ -15,10 +15,10 @@ clean:
 	-find work -name ".ipynb" -exec nbstripout {} \;
 	-find work -name "__pycache__" -exec rm -rf {} \;
 	-find work -name "*.pyc" -exec rm {} \;
-	-find work/marvin -name "*.py"  -not -name "__init__.py" -exec rm {} \;
 
-build: 
-	-find . -name ".ipynb_checkpoints" | xargs rm -rf
+build: clean
+	find . -name ".ipynb_checkpoints" | xargs rm -rf
+	-find work/marvin -name "*.py"  -not -name "__init__.py" -exec rm {} \;
 	for var in $$(find work/marvin -name "*.ipynb" -not -path ".ipynb_checkpoints/*") ; \
 	do \
 			name=`echo $$var | cut -d'.' -f1`; \

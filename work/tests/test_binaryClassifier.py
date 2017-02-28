@@ -2,12 +2,16 @@
 # encoding: utf-8
 import sys
 sys.path.append("../../")
-
-from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, HyperOpt
+import pandas as pd
+import numpy as np
 import work.marvin.binary_classifier_models
+from work.marvin.binary_classifier_models.modelfit import BinaryClassifier, HyperOpt
 from sklearn.datasets import make_classification
 from skopt.space import Categorical
 from sklearn.ensemble import RandomForestClassifier
+from sklearn2pmml.decoration import ContinuousDomain
+from sklearn.preprocessing import Imputer
+from sklearn_pandas import DataFrameMapper
 
 from work.marvin.dataPrepareforTraining.dataMapperPrepare import dataMapperBuilder
 
@@ -24,7 +28,7 @@ def testBinaryClassifier():
     lgb = BinaryClassifier("LightGBM")
     assert lgb.model is work.marvin.binary_classifier_models.bestLightgbmModelProducer
 
-def testOptimizeModel():
+def testHyperOpt():
     X, y = make_classification(n_samples=100, n_features=20, n_informative=2)
     skopt_grid = {'max_features': (2, 19),
                   'min_samples_leaf': (50, 500),
@@ -33,3 +37,15 @@ def testOptimizeModel():
     for mod in ["RF", "GBRT", "GP"]:
         res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
         assert len(res) == 10
+
+def testOptimizeBestModel():
+    X, y = make_classification(n_samples=100, n_features=20, n_informative=2)
+    X = pd.DataFrame(X)
+    conti_ftr = X.columns
+    datamapper = DataFrameMapper([(conti_ftr, [ContinuousDomain(invalid_value_treatment='as_is',
+                                                     missing_value_treatment='as_mean'),
+                                   Imputer()])], df_out=False)
+    X_ = datamapper.fit_transform(X)
+    assert len(X_) == len(X)
+    lgb = BinaryClassifier("LightGBM")
+    bestskopt, trace = lgb.optimizeBestModel(X, datamapper=datamapper, target=np.array(y), search_alg="GP")
