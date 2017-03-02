@@ -1,0 +1,11 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@git.creditx.com:marvin/marvin_modeling.git
+	branch = notebook
+	commit = c4534c2d9e4dec7f180ab6e9c0c18cf7c0cc056e
+	parent = ed417051e35a23c0cdaa2ea88f61b8900900283d
+	cmdver = 0.3.1
