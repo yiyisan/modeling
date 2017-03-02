@@ -1,11 +1,17 @@
 .ipynb_checkpoints
 *.pyc
+*.orig
+*.pyx
+*.pkl
 __pycache__
 .bash_history
 .viminfo
 .condarc
 .cache
 .ipython/profile_default/history.sqlite
+.jupyter
+.local
+build
 dist
 work.egg-info
 work/marvin/binary_classifier_models/*.py
