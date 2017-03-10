@@ -4,9 +4,9 @@ import pytest
 
 def combine(value):
     if isinstance(value, six.string_types):
-        u"{}_{}".format(1, value)
+        return u"{}_{}".format(1, value)
     else:
-        "{}_{}".format(1, value)
+        return "{}_{}".format(1, value)
 
 
 def test_combine():
