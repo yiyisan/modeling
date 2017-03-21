@@ -5,18 +5,18 @@ init:
 
 package:
 	python setup.py sdist
-	rm /opt/anaconda/conda-bld/src_cache/work*.tar.gz -rf
+	rm /opt/anaconda/conda-bld/src_cache/marvin_modeling*.tar.gz -rf
 	conda build purge
 	conda build recipe
 
 clean:
 	rm -rf work.egg-info
+	-find . -name ".ipynb_checkpoints" | xargs rm -rf
 	-find work -name ".ipynb" -exec nbstripout {} \;
 	-find work -name "__pycache__" -exec rm -rf {} \;
 	-find work -name "*.pyc" -exec rm {} \;
 
 build: clean
-	find . -name ".ipynb_checkpoints" | xargs rm -rf
 	-find work/marvin -name "*.py"  -not -name "__init__.py" -exec rm {} \;
 	for var in $$(find work/marvin -name "*.ipynb" -not -path ".ipynb_checkpoints/*") ; \
 	do \
@@ -26,7 +26,6 @@ build: clean
 			fi \
 	done
 	find work -name "*.py" | xargs sed -i "s/get_ipython().magic('matplotlib inline')/matplotlib.use('agg')/"
-	#find . -name "*.py" -print0 | xargs -0 perl -pi -e 's/ +$$//'
 
 lint: build
 	flake8 --exclude=lib/,bin/ work/marvin
