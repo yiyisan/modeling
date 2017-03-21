@@ -9,7 +9,7 @@ DESCRIPTION = "rich help module for marvin modelling"
 AUTHOR = "CreditX"
 AUTHOR_EMAIL = "marvin@creditx.com"
 URL = "https://git.creditx.com/marvin/marvin_modeling"
-VERSION = '0.0.7'
+VERSION = '0.0.8'
 
 setup(
     name=NAME,
