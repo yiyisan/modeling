@@ -13,7 +13,7 @@ __pycache__
 .local
 build
 dist
-work.egg-info
+marvin_modeling.egg-info
 work/marvin/binary_classifier_models/*.py
 work/marvin/binary_classification_evaluation/*.py
 work/marvin/dataPrepareforTraining/*.py
