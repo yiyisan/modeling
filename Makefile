@@ -29,7 +29,7 @@ build: clean
 	#find . -name "*.py" -print0 | xargs -0 perl -pi -e 's/ +$$//'
 
 lint: build
-	flake8 --exclude=lib/,bin/ work
+	flake8 --exclude=lib/,bin/ work/marvin
 
 test: build
 	-docker rm marvin_modeling_test
@@ -44,4 +44,4 @@ run: clean
 	-docker kill marvin_modeling
 	-docker rm marvin_modeling
 	docker run -it -d --name marvin_modeling --shm-size 2g -e PASSWORD=debug -p 28888:8888 \
-		-v `pwd`:/home/creditx newreg.creditx.com/marvin/marvin_modeling:devel
+		-v `pwd`/work:/home/creditx/work newreg.creditx.com/marvin/marvin_modeling:devel

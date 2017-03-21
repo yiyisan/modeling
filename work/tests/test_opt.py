@@ -4,20 +4,30 @@
 import pytest
 import joblib
 from skopt import gp_minimize
-from work.marvin.binary_classifier_models.modelfit import HyperOpt
+from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
+from work.marvin.binary_classifier_models.modelfit import HyperOpt
+from work.marvin.binary_classifier_models.bestLightgbmModelProducer import configSpaceInitialization as lgbconfigspace
+from work.marvin.binary_classifier_models.bestGbdtModelProducer import configSpaceInitialization as gbmconfigspace
+from work.marvin.binary_classifier_models.bestXgboostModelProducer import configSpaceInitialization as xgbconfigspace
+from work.marvin.binary_classifier_models.bestRfModelProducer import configSpaceInitialization as rfconfigspace
 import os
 
 
-def test_opt():
-    X_train = joblib.load("tests/fixtures/X_train")
-    y_train = joblib.load("tests/fixtures/y_train")
-    param_grid = joblib.load("tests/fixtures/param_grid")
-    search_func_args = joblib.load("tests/fixtures/search_func_args")
+def test_hyperopt():
+    X_train, y_train = make_classification(random_state=27)
+    param_grid = lgbconfigspace(X_train.shape)
+    assert param_grid is not None
+    param_grid = gbmconfigspace(X_train.shape)
+    assert param_grid is not None
+    param_grid = xgbconfigspace(X_train.shape)
+    assert param_grid is not None
+    param_grid = rfconfigspace(X_train.shape)
+    assert param_grid is not None
     results = HyperOpt('GP').search(
         X_train,
         y_train,
         RandomForestClassifier,
         param_grid,
-        'neg_log_loss',
-        **search_func_args)
+		n_calls=10)
+    assert results is not None
