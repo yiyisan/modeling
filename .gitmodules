@@ -1,0 +1,3 @@
+[submodule "cookiecutter-marvin"]
+	path = cookiecutter-marvin
+	url = git@git.creditx.com:marvin/cookiecutter-marvin.git
