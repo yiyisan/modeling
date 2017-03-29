@@ -18,17 +18,18 @@ def test_FtrTransFunc():
     with pytest.raises(ValueError):
         mapperBuilder.FtrTransFunc('NewTransform')
 
+
 def test_dataMapperBuilder():
-    mis_val = {"request_id": ("dropRow", "active")}
+    mis_val = {"request_id": ("drop_row", "active")}
     traindf = pd.DataFrame({"request_id": [0, 1, 2],
                             "data": ["1", "0", "0"],
                             "Label": [1, 0, 0]})
     assert isinstance(traindf, pd.DataFrame)
-    conti_ftr = traindf.describe().columns
-    categ_ftr = [ "request_id"]
+    conti_ftr = ["data"]
+    categ_ftr = ["request_id"]
     dfm = mapperBuilder.dataMapperBuilder(traindf, categ_ftr, conti_ftr, mis_val=mis_val)
     ans = dfm.fit_transform(traindf[traindf.columns.difference(["Label"])], traindf["Label"])
-    assert len(ans.columns) == 2
+    assert len(ans.columns) == 4
 
 
 def test_contifeatureimportance():
@@ -38,5 +39,4 @@ def test_contifeatureimportance():
     featureImpr = featureSelection.continuousFeatureImpr(traindf, "Label")
     assert len(featureImpr) == 2
     print(featureImpr.ix[0, :].tolist())
-    assert_array_equal(featureImpr.ix[0, :].tolist(), [np.inf, "data", 0.0, 0.866025403784])
-
+    assert_array_equal(featureImpr.ix[0, :].tolist(), [np.inf, "data", 0.0, np.inf])

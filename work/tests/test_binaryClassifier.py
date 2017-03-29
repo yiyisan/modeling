@@ -36,16 +36,15 @@ def testHyperOpt():
                   'n_estimators': (50, 800)}
     for mod in ["RF", "GBRT", "GP"]:
         res = HyperOpt('RF').search(X, y, RandomForestClassifier, skopt_grid, 'neg_log_loss', n_calls=10)
-        assert len(res) == 10
+        assert len(res) == 19
 
 def testOptimizeBestModel():
     X, y = make_classification(n_samples=100, n_features=20, n_informative=2)
-    X = pd.DataFrame(X)
-    conti_ftr = X.columns
+    Xall = pd.concat([pd.DataFrame(X), pd.DataFrame(y, columns=['target'])], axis=1)
+    conti_ftr = list(range(20))
     datamapper = DataFrameMapper([(conti_ftr, [ContinuousDomain(invalid_value_treatment='as_is',
                                                      missing_value_treatment='as_mean'),
-                                   Imputer()])], df_out=False)
+                                   Imputer()])], df_out=True)
     X_ = datamapper.fit_transform(X)
-    assert len(X_) == len(X)
     lgb = BinaryClassifier("LightGBM")
-    bestskopt, trace = lgb.optimizeBestModel(X, datamapper=datamapper, target=np.array(y), search_alg="GP")
+    bestskopt, trace = lgb.optimizeBestModel(Xall, datamapper=datamapper, target='target', search_alg="GP", n_calls=10)
