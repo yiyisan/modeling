@@ -24,6 +24,6 @@ register_doit_as_IPython_magic()\n\
 %load_ext sql\n\
 %load_ext jupyter_cms\n" >  ~/.ipython/profile_default/startup/startup_magic.ipy
 
-RUN ADD cookiecutter-marvin /home/$NB_USER/.cookiecutters/cookiecutter-marvin
+ADD cookiecutter-marvin /home/$NB_USER/.cookiecutters/cookiecutter-marvin
 
 RUN conda install --force --yes nbconvert nbflow binaryornot jinja2 click whichcraft poyo jinja2-time cookiecutter notebook=5.0.1
